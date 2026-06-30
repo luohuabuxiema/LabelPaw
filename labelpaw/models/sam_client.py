@@ -32,7 +32,7 @@ import sys
 if getattr(sys, 'frozen', False):
     PROJECT_ROOT = os.path.dirname(sys.executable)
 else:
-    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 LOCAL_WEIGHTS_DIR = os.path.join(PROJECT_ROOT, "weights")
 HARDCODED_DEV_DIR = r"E:\11-AI\标注工具\weights"
@@ -105,8 +105,20 @@ class Sam3ModelLoadWorker(QThread):
 
     def run(self):
         try:
-            model = build_sam3_image_model(checkpoint_path=self.checkpoint_path, enable_inst_interactivity=True)
-            model.to("cuda")
+            if torch.cuda.is_available():
+                model = build_sam3_image_model(
+                    checkpoint_path=self.checkpoint_path,
+                    enable_inst_interactivity=True,
+                    device="cpu",
+                )
+                model.half()
+                model.to("cuda")
+            else:
+                model = build_sam3_image_model(
+                    checkpoint_path=self.checkpoint_path,
+                    enable_inst_interactivity=True,
+                    device="cpu",
+                )
             processor = Sam3Processor(model)
             self.loaded.emit(model, processor, True, "模型加载成功")
         except Exception as e:
@@ -135,7 +147,7 @@ class Sam3InferenceWorker(QThread):
 
                 if task_type == 'point':
                     x, y = data
-                    with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+                    with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=torch.float16):
                         masks, scores, _ = self.model.predict_inst(
                             inference_state=self.inference_state,
                             point_coords=np.array([[x, y]]),
@@ -177,7 +189,7 @@ class Sam3InferenceWorker(QThread):
                         continue
 
                     for prompt_text in prompts:
-                        with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+                        with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=torch.float16):
                             out_state = self.processor.set_text_prompt(prompt=prompt_text, state=self.inference_state)
 
                             masks = out_state.get("masks", [])
@@ -287,7 +299,7 @@ class Sam2InferenceWorker(QThread):
 
                 if task_type == 'point':
                     x, y = data
-                    with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+                    with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=torch.float16):
                         masks, scores, _ = self.predictor.predict(
                             point_coords=np.array([[x, y]]),
                             point_labels=np.array([1]),
@@ -450,7 +462,7 @@ class SAMClient(QObject):
                 return
             try:
                 pil_img = Image.open(image_path).convert("RGB")
-                with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+                with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=torch.float16):
                     state = self.processor.set_image(pil_img)
                     if self._sam3_worker:
                         self._sam3_worker.inference_state = state
@@ -463,7 +475,7 @@ class SAMClient(QObject):
             try:
                 pil_img = Image.open(image_path).convert("RGB")
                 img_np = np.array(pil_img)
-                with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+                with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=torch.float16):
                     self.model.set_image(img_np)
                     if self._sam2_worker:
                         self._sam2_worker.image_set = True

@@ -172,8 +172,8 @@ class Canvas(QGraphicsScene):
 
         # ---------------- SAM 智能辅助悬停 ----------------
         # 将 RBOX 加入 SAM 支持的模式列表
-        is_sam_model = getattr(self.sam_client, 'current_model_key', '').startswith('sam')
-        if self.sam_enabled and is_sam_model and self.is_inside_image(pt) and self.mode in [CanvasMode.RECT, CanvasMode.POLY,
+        is_sam_model = (getattr(self.sam_client, 'current_model_key', '') or '').startswith('sam')
+        if self.sam_enabled and is_sam_model and not self.drawing and self.is_inside_image(pt) and self.mode in [CanvasMode.RECT, CanvasMode.POLY,
                                                                            CanvasMode.RBOX]:
             # 检查鼠标是否在已标注的非临时区域内部，如果是，则跳过 SAM 智能预选推理以提升性能并防止视觉遮挡
             from labelpaw.graphics.shapes import BaseShape
@@ -283,7 +283,6 @@ class Canvas(QGraphicsScene):
         pt = event.scenePos()
         clamped_pt = self.clamp_point(pt)
         
-        is_yolo = getattr(self.sam_client, 'current_model_key', '').startswith('yolo')
 
         # 1. 优先检测是否点击在已有的图形或者手柄上，如果是，则直接进入编辑/选择状态
         clicked_item = None
@@ -333,10 +332,18 @@ class Canvas(QGraphicsScene):
 
         # ---------------- SAM 确认生成 (仅限点击在空白处时触发) ----------------
         # 支持 RBOX, 但仅限 SAM 模型
-        if self.sam_enabled and not is_yolo and event.button() == Qt.LeftButton and self.mode in [CanvasMode.RECT, CanvasMode.POLY,
-                                                                                  CanvasMode.RBOX]:
-            if self.is_inside_image(pt) and self.sam_client:
-                self.sam_client.request_inference(clamped_pt.x(), clamped_pt.y(), is_click=True)
+        is_sam_model = (getattr(self.sam_client, 'current_model_key', '') or '').startswith('sam')
+        if self.sam_enabled and is_sam_model and event.button() == Qt.LeftButton and self.mode in [CanvasMode.RECT, CanvasMode.POLY,
+                                                                                   CanvasMode.RBOX]:
+            if self.is_inside_image(pt):
+                if self.mode in [CanvasMode.RECT, CanvasMode.RBOX]:
+                    if self.sam_hover_item:
+                        self.removeItem(self.sam_hover_item)
+                        self.sam_hover_item = None
+                    self.drawing = True
+                    self.start_pt = clamped_pt
+                elif self.sam_client:
+                    self.sam_client.request_inference(clamped_pt.x(), clamped_pt.y(), is_click=True)
             return
 
         # 如果点击了空白处，取消所有选中状态 (退出编辑模式)
@@ -418,7 +425,30 @@ class Canvas(QGraphicsScene):
                     if item.scene() == self:
                         item.setSelected(True)
 
-        is_sam_model = getattr(self.sam_client, 'current_model_key', '').startswith('sam')
+        is_sam_model = (getattr(self.sam_client, 'current_model_key', '') or '').startswith('sam')
+
+        if event.button() == Qt.LeftButton and self.drawing and self.start_pt:
+            self.drawing = False
+            pt = self.clamp_point(event.scenePos())
+            rect = QRectF(min(self.start_pt.x(), pt.x()), min(self.start_pt.y(), pt.y()),
+                          abs(pt.x() - self.start_pt.x()), abs(pt.y() - self.start_pt.y()))
+            if self.temp_item:
+                self.removeItem(self.temp_item)
+                self.temp_item = None
+
+            if rect.width() > 5 and rect.height() > 5:
+                if self.mode == CanvasMode.RECT:
+                    self.shape_drawn.emit(RectShape(rect))
+                elif self.mode == CanvasMode.RBOX:
+                    cx, cy = rect.center().x(), rect.center().y()
+                    w, h = rect.width(), rect.height()
+                    self.shape_drawn.emit(RotatedRectShape(cx, cy, w, h, 0))
+            elif self.sam_enabled and is_sam_model and self.mode in [CanvasMode.RECT, CanvasMode.RBOX] and self.sam_client:
+                self.sam_client.request_inference(pt.x(), pt.y(), is_click=True)
+
+            self.state_changed.emit()
+            return
+
         if self.sam_enabled and is_sam_model: return
 
         if event.button() == Qt.LeftButton and self.drawing:
@@ -463,7 +493,7 @@ class Canvas(QGraphicsScene):
                     self.shape_double_clicked.emit(parent)
                     return
 
-        is_sam_model = getattr(self.sam_client, 'current_model_key', '').startswith('sam')
+        is_sam_model = (getattr(self.sam_client, 'current_model_key', '') or '').startswith('sam')
         if event.button() == Qt.LeftButton and self.mode == CanvasMode.POLY and not (self.sam_enabled and is_sam_model) and len(
                 self.poly_pts) > 2:
             self.finish_poly_shape()

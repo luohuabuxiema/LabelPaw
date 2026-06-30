@@ -4,7 +4,7 @@ import json
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QInputDialog, QMessageBox, QLabel, \
     QListWidgetItem, QDialog, QMenu, QAbstractItemView, QProgressBar, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit, \
     QCheckBox, QListWidget, QFrame, QWidget
-from PySide6.QtCore import Qt, QPointF, QRectF, QThread, Signal, QSize, QEvent, QSettings
+from PySide6.QtCore import Qt, QPointF, QRectF, QThread, Signal, QSize, QEvent, QSettings, QTimer
 from PySide6.QtGui import QPainter, QIcon, QPixmap, QColor, QAction, QActionGroup, QPolygonF, QMovie
 from main_dataset_tool import DatasetToolWindow
 import cv2
@@ -62,7 +62,7 @@ class SamBatchWorker(QThread):
                 w_img, h_img = pil_img.size
 
                 # 2. 提取特征
-                with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+                with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=torch.float16):
                     state = self.processor.set_image(pil_img)
 
                 # 3. 针对每个提示词逐一推理并整合结果
@@ -71,7 +71,7 @@ class SamBatchWorker(QThread):
                     if self.is_cancelled:
                         break
 
-                    with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+                    with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=torch.float16):
                         out_state = self.processor.set_text_prompt(prompt=prompt, state=state)
 
                         masks = out_state.get("masks", [])
@@ -1028,6 +1028,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.class_list = []
         self.current_format = "json"
         self.yolo_filtered_class_ids = []
+        self.auto_advance_after_smart = True
 
         self.modeLabel = QLabel("模式: 矩形标注")
         self.statusBar.addWidget(self.modeLabel)
@@ -1443,6 +1444,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             DialogOver(self, "未找到任何预测结果", "提示", "info")
             self.statusBar.showMessage("预测完成，未找到任何结果", 3000)
             self._update_help_text(self.scene.mode)
+            self._auto_save_and_advance_after_smart()
             return
             
         # Get existing shapes for deduplication
@@ -1575,6 +1577,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             DialogOver(self, "暂无新的预测内容需要添加", "提示", "info")
             self.statusBar.showMessage("预测完成，暂无新内容", 3000)
             self._update_help_text(self.scene.mode)
+            self._auto_save_and_advance_after_smart()
             return
         
         self.save_classes()
@@ -1587,6 +1590,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         DialogOver(self, msg + "，并进行标注", "预测成功", "success")
         self.statusBar.showMessage(msg, 5000)
         self._update_help_text(self.scene.mode)
+        self._auto_save_and_advance_after_smart()
 
     def on_predict_error(self, err_msg):
         self.predict_movie.stop()
@@ -2016,6 +2020,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.update_annotation_tree()
                 self.auto_save_annotation()
                 self.push_state()
+            self._auto_save_and_advance_after_smart()
             return
 
         self.helpLabel.setText(f"提取完成: 成功抓取 {len(results)} 个 '{prompt_text}' 目标")
@@ -2058,6 +2063,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.update_annotation_tree()
         self.auto_save_annotation()
         self.push_state()
+        self._auto_save_and_advance_after_smart()
 
     def delete_selected(self):
         for item in self.scene.selectedItems():
@@ -2397,7 +2403,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def _update_help_text(self, mode):
         # 只有在智能模式开启，并且当前选择的是SAM模型时，才显示悬停预览提示
-        is_sam = self.samSwitch.isChecked() and getattr(self.sam_client, 'current_model_key', '').startswith('sam')
+        is_sam = self.samSwitch.isChecked() and (getattr(self.sam_client, 'current_model_key', '') or '').startswith('sam')
         if mode == CanvasMode.RECT:
             if is_sam:
                 self.helpLabel.setText("操作: 鼠标悬停实时预览外接矩形，左键点击直接确认生成矩形框")
@@ -2484,6 +2490,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 
             self.push_state()
             self.update_annotation_tree()
+            if self._is_smart_annotation_active():
+                self._auto_save_and_advance_after_smart()
         else:
             self.scene.removeItem(shape)
 
@@ -2755,6 +2763,28 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             else:
                 # YOLO 或者没有模型时，恢复默认的标注提示词
                 self._update_help_text(self.scene.mode)
+
+    def _is_smart_annotation_active(self):
+        model_key = getattr(self.sam_client, 'current_model_key', '') or ''
+        return self.samSwitch.isChecked() and (model_key.startswith('sam') or model_key.startswith('yolo'))
+
+    def _auto_save_and_advance_after_smart(self):
+        if not self.auto_advance_after_smart:
+            return
+        if not self.current_image_path or self.listFiles.count() == 0:
+            return
+        QTimer.singleShot(250, self._advance_to_next_image_after_save)
+
+    def _advance_to_next_image_after_save(self):
+        self.auto_save_annotation()
+        current_row = self.listFiles.currentRow()
+        if current_row < 0:
+            return
+        if current_row < self.listFiles.count() - 1:
+            self.listFiles.setCurrentRow(current_row + 1)
+            self.statusBar.showMessage("已自动保存并切换到下一张图片", 3000)
+        else:
+            self.statusBar.showMessage("已自动保存，当前已是最后一张图片", 3000)
 
     def auto_save_annotation(self):
         if not self.current_image_path or not self.scene.img_item: return
