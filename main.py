@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QInputDial
     QCheckBox, QListWidget, QFrame, QWidget
 from PySide6.QtCore import Qt, QPointF, QRectF, QThread, Signal, QSize, QEvent, QSettings
 from PySide6.QtGui import QPainter, QIcon, QPixmap, QColor, QAction, QActionGroup, QPolygonF, QMovie
-from main_dataset_tool import DatasetToolWindow
+from TrainingPlatform.ui.main_window import MainWindow as TrainingPlatformWindow
 import cv2
 import numpy as np
 from PIL import Image
@@ -1900,7 +1900,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def open_dataset_tool(self):
         try:
             if not hasattr(self, 'dataset_window') or self.dataset_window is None:
-                self.dataset_window = DatasetToolWindow()
+                self.dataset_window = TrainingPlatformWindow()
             # 显示窗口
             self.dataset_window.show()
             # 把窗口强制拉到最前面
@@ -2106,7 +2106,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 btn.setMinimumWidth(180)
 
             self.formatWidget.set_icon_only(False)
-            self.btnDatasetTool.setText(" 数据集处理")
+            self.btnDatasetTool.setText(" AI 训练与数据集平台")
             self.samIcon.show() # 展开时显示左侧图标
             # SAM 开关横向显示
             self.samSwitch.setFixedSize(50, 26)
