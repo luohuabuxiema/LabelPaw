@@ -1,0 +1,280 @@
+# -*- coding: utf-8 -*-
+"""
+YOLO Training Worker Thread using PySide6 QThread & Ultralytics API
+"""
+import sys
+import os
+import re
+import time
+import json
+import subprocess
+import traceback
+from PySide6.QtCore import QThread, Signal
+
+class TrainWorker(QThread):
+    log_signal = Signal(str)          # 实时日志文本
+    progress_signal = Signal(dict)   # 包含 epoch, losses, mAP50 等指标字典
+    finish_signal = Signal(bool, str) # 训练成功/失败标志, 消息
+
+    def __init__(self, task_id, model_name, dataset_yaml, config_dict, save_dir, python_exe=None):
+        super().__init__()
+        self.task_id = task_id
+        self.model_name = model_name
+        self.dataset_yaml = dataset_yaml
+        self.config_dict = config_dict
+        self.save_dir = save_dir
+        self.python_exe = python_exe
+        self._is_stopped = False
+        self._process = None
+        self._log_file_path = None
+        self._pending_log_tag = None
+        self._pending_log_line = None
+        if self.save_dir:
+            try:
+                os.makedirs(self.save_dir, exist_ok=True)
+                self._log_file_path = os.path.join(self.save_dir, "train.log")
+            except Exception:
+                pass
+
+    def _flush_pending_log(self):
+        if getattr(self, "_pending_log_line", None) and self._log_file_path:
+            try:
+                with open(self._log_file_path, "a", encoding="utf-8", errors="replace") as f:
+                    f.write(f"{self._pending_log_line}\n")
+            except Exception:
+                pass
+        self._pending_log_tag = None
+        self._pending_log_line = None
+
+    def _emit_log(self, msg: str):
+        """Emit log line to GUI and append to task train.log."""
+        self.log_signal.emit(msg)
+        if self._log_file_path:
+            m_epoch = re.match(r'^\s*(\d+/\d+)\s+', msg)
+            is_val = ('Class' in msg and 'Images' in msg and 'Instances' in msg and 'Box(P' in msg)
+            tag = m_epoch.group(1) if m_epoch else ("VAL_PROGRESS" if is_val else None)
+            if tag:
+                if self._pending_log_tag == tag:
+                    self._pending_log_line = msg
+                    return
+                self._flush_pending_log()
+                self._pending_log_tag = tag
+                self._pending_log_line = msg
+                return
+
+            self._flush_pending_log()
+            try:
+                with open(self._log_file_path, "a", encoding="utf-8", errors="replace") as f:
+                    f.write(f"{msg}\n")
+            except Exception:
+                pass
+
+    def stop(self):
+        self._is_stopped = True
+        self._emit_log("[WARN] 收到用户停止指令，正在停止训练...")
+        if self._process and self._process.poll() is None:
+            try:
+                self._process.terminate()
+                time.sleep(0.5)
+                if self._process.poll() is None:
+                    self._process.kill()
+            except Exception:
+                pass
+
+    def run(self):
+        try:
+            self._emit_log(f"[INFO] 开始启动 YOLO 训练任务 [Task ID: {self.task_id}]")
+            self._emit_log(f"[INFO] 模型架构/预训练: {self.model_name}")
+            self._emit_log(f"[INFO] 数据集配置: {self.dataset_yaml}")
+            self._emit_log(f"[INFO] 存放目录: {self.save_dir}")
+            if self.python_exe:
+                self._emit_log(f"[INFO] 目标运行环境: {self.python_exe}")
+            self._emit_log("-" * 60)
+
+            # Check if using external python_exe runner
+            if self.python_exe and os.path.isfile(self.python_exe):
+                self._run_via_subprocess()
+            else:
+                self._run_in_process()
+
+        except StopIteration as e:
+            self._emit_log(f"[STOP] {str(e)}")
+            self.finish_signal.emit(False, "训练已被终止")
+        except Exception as e:
+            err_msg = traceback.format_exc()
+            self._emit_log(f"[ERROR] 训练异常失败:\n{err_msg}")
+            self.finish_signal.emit(False, str(e))
+
+    def _run_via_subprocess(self):
+        """Execute training using the selected python executable in an isolated subprocess."""
+        os.makedirs(self.save_dir, exist_ok=True)
+        config_file = os.path.join(self.save_dir, "train_config.json")
+        with open(config_file, "w", encoding="utf-8") as f:
+            json.dump(self.config_dict, f, ensure_ascii=False, indent=2)
+
+        runner_script = os.path.join(os.path.dirname(__file__), "train_runner.py")
+        workspace = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
+        env = os.environ.copy()
+        cmd = [
+            self.python_exe,
+            "-u",
+            runner_script,
+            "--task-id", str(self.task_id),
+            "--model", str(self.model_name),
+            "--data", str(self.dataset_yaml),
+            "--save-dir", str(self.save_dir),
+            "--config-file", str(config_file)
+        ]
+
+        startupinfo = None
+        if os.name == 'nt':
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startupinfo.wShowWindow = subprocess.SW_HIDE
+
+        self._emit_log(f"[INFO] 正在启动训练子进程...")
+        self._process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            cwd=workspace,
+            env=env,
+            startupinfo=startupinfo
+        )
+
+        success = False
+        fail_reason = None
+        for line in self._process.stdout:
+            raw_line = line.rstrip('\r\n')
+            if raw_line.startswith("__TRAIN_PROGRESS__"):
+                try:
+                    data = json.loads(raw_line[len("__TRAIN_PROGRESS__"):])
+                    self.progress_signal.emit(data)
+                except Exception:
+                    pass
+            elif raw_line.startswith("__SAVE_DIR__"):
+                actual_save_dir = raw_line[len("__SAVE_DIR__"):].strip()
+                if actual_save_dir:
+                    self.save_dir = actual_save_dir
+                    try:
+                        from TrainingPlatform.db.database import DatabaseManager
+                        db = DatabaseManager()
+                        db.update_task_status(self.task_id, "RUNNING", save_dir=actual_save_dir)
+                    except Exception:
+                        pass
+            elif raw_line == "__TRAIN_SUCCESS__":
+                success = True
+            elif raw_line.startswith("__TRAIN_FAILED__"):
+                fail_reason = raw_line[len("__TRAIN_FAILED__"):]
+            else:
+                # Handle \r inside raw_line from tqdm dynamic in-place updates
+                if '\r' in raw_line:
+                    chunks = raw_line.split('\r')
+                    clean_chunks = [c.rstrip() for c in chunks if c.strip()]
+                    raw_line = clean_chunks[-1] if clean_chunks else ""
+                filtered_line = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', raw_line).rstrip()
+                if filtered_line:
+                    self._emit_log(filtered_line)
+                elif raw_line == "":
+                    self._emit_log("")
+
+        self._process.wait()
+        self._flush_pending_log()
+        if self._is_stopped:
+            self._emit_log("[WARN] 训练已被用户中途终止")
+            self.finish_signal.emit(False, "训练已被用户中途终止")
+        elif success or self._process.returncode == 0:
+            self.finish_signal.emit(True, "训练完成")
+        else:
+            err_msg = fail_reason or f"训练子进程退出码: {self._process.returncode}"
+            self._emit_log(f"[ERROR] 训练失败: {err_msg}")
+            self.finish_signal.emit(False, err_msg)
+
+    def _run_in_process(self):
+        """Fallback in-process training."""
+        # Ensure ultralytics is importable
+        try:
+            from ultralytics import YOLO
+        except ImportError:
+            sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+            from ultralytics import YOLO
+
+        model = YOLO(self.model_name)
+
+        def on_train_epoch_end(trainer):
+            if self._is_stopped:
+                raise StopIteration("用户暂停/强行终止训练任务")
+
+            epoch = trainer.epoch + 1
+            total_epochs = trainer.epochs
+            metrics_data = {
+                "epoch": epoch,
+                "total_epochs": total_epochs,
+                "progress": round((epoch / total_epochs) * 100, 2),
+                "train_box_loss": 0.0,
+                "train_cls_loss": 0.0,
+                "train_dfl_loss": 0.0,
+                "val_box_loss": 0.0,
+                "val_cls_loss": 0.0,
+                "val_dfl_loss": 0.0,
+                "precision": 0.0,
+                "recall": 0.0,
+                "map50": 0.0,
+                "map50_95": 0.0
+            }
+
+            if hasattr(trainer, 'loss_items') and trainer.loss_items is not None:
+                try:
+                    loss_items = trainer.loss_items
+                    if len(loss_items) >= 3:
+                        metrics_data["train_box_loss"] = float(loss_items[0])
+                        metrics_data["train_cls_loss"] = float(loss_items[1])
+                        metrics_data["train_dfl_loss"] = float(loss_items[2])
+                except Exception:
+                    pass
+
+            if hasattr(trainer, 'metrics') and trainer.metrics:
+                try:
+                    m = trainer.metrics
+                    if hasattr(m, 'results_dict'):
+                        rd = m.results_dict
+                        metrics_data["precision"] = float(rd.get('metrics/precision(B)', 0.0))
+                        metrics_data["recall"] = float(rd.get('metrics/recall(B)', 0.0))
+                        metrics_data["map50"] = float(rd.get('metrics/mAP50(B)', 0.0))
+                        metrics_data["map50_95"] = float(rd.get('metrics/mAP50-95(B)', 0.0))
+                except Exception:
+                    pass
+
+            log_str = (f"[Epoch {epoch}/{total_epochs}] "
+                       f"Box Loss: {metrics_data['train_box_loss']:.4f} | "
+                       f"Cls Loss: {metrics_data['train_cls_loss']:.4f} | "
+                       f"mAP50: {metrics_data['map50']:.4f}")
+            self._emit_log(log_str)
+            self.progress_signal.emit(metrics_data)
+
+        train_args = {
+            "data": self.dataset_yaml,
+            "project": os.path.dirname(self.save_dir),
+            "name": os.path.basename(self.save_dir),
+            "exist_ok": True,
+            "plots": True,
+            "verbose": True
+        }
+
+        for k, v in self.config_dict.items():
+            if v is not None and k not in ("project", "name", "exist_ok", "plots", "verbose", "data", "python_exe"):
+                train_args[k] = v
+
+        self._emit_log("[INFO] 正在投入模型训练，请稍候...")
+        results = model.train(**train_args)
+
+        if self._is_stopped:
+            self._emit_log("[WARN] 训练已被用户中途终止")
+            self.finish_signal.emit(False, "训练已被用户中途终止")
+        else:
+            self.finish_signal.emit(True, "训练完成")
+
