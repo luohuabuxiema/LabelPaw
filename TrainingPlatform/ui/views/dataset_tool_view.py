@@ -7,6 +7,7 @@ Provides 4 key dataset processing sub-tools:
 3. UNET: JSON 转 U-Net 掩码
 4. YOLO_TO_UNET: YOLO 分割转 U-Net 掩码
 """
+from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                QFileDialog, QTextEdit, QMessageBox)
 from PySide6.QtCore import Qt, Slot
@@ -91,7 +92,7 @@ class DatasetToolView(MkQWidget):
         # Start Processing Button
         self.btn_start = MkButton("开始执行转换与数据集划分")
         self.btn_start.setIcon(PhPlay.regular())
-        self.btn_start.setStyleSheet("font-size: 16px; font-weight: bold; padding: 12px;")
+        _MkThemeEngine.apply_style_sheet(self.btn_start, "font-size: 16px; font-weight: bold; padding: 12px;")
         self.btn_start.clicked.connect(self.start_processing)
         main_layout.addWidget(self.btn_start)
 
@@ -101,7 +102,7 @@ class DatasetToolView(MkQWidget):
 
         self.console = QTextEdit()
         self.console.setReadOnly(True)
-        self.console.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.console, """
             QTextEdit {
                 background-color: #1e1e1e;
                 color: #67c23a;
@@ -120,9 +121,9 @@ class DatasetToolView(MkQWidget):
     def apply_theme(self, *args):
         is_dark = ThemeEngine.is_dark()
         if is_dark:
-            self.title_lbl.setStyleSheet("font-size: 20px; font-weight: bold; color: #f8fafc;")
+            _MkThemeEngine.apply_style_sheet(self.title_lbl, "font-size: 20px; font-weight: bold; color: #f8fafc;")
         else:
-            self.title_lbl.setStyleSheet("font-size: 20px; font-weight: bold; color: #0f172a;")
+            _MkThemeEngine.apply_style_sheet(self.title_lbl, "font-size: 20px; font-weight: bold; color: #0f172a;")
 
     def set_mode(self, mode_key):
         mode_idx_map = {"TO_YOLO": 0, "YOLO_SPLIT": 1, "UNET": 2, "YOLO_TO_UNET": 3}

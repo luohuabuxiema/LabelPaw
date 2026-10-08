@@ -4,6 +4,7 @@ Dashboard View for AI Vision Training Platform
 Refactored to use MonkeyQt MkQWidget, MkCard, MkProTable.
 Zero-bleed rounded table headers, native theme adaptation, millisecond theme toggles.
 """
+from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel
 from PySide6.QtCore import Qt
 
@@ -88,16 +89,16 @@ class DashboardView(MkQWidget):
         card = MkCard(title=title)
         l = card.content_layout
         v_lbl = QLabel(val)
-        v_lbl.setStyleSheet(f"font-size: 26px; font-weight: bold; color: {color};")
+        _MkThemeEngine.apply_style_sheet(v_lbl, f"font-size: 26px; font-weight: bold; color: {color};")
         l.addWidget(v_lbl)
         return {"card": card, "val_lbl": v_lbl}
 
     def apply_theme(self, *args):
         is_dark = ThemeEngine.is_dark()
         if is_dark:
-            self.title_lbl.setStyleSheet("font-size: 20px; font-weight: bold; color: #f8fafc;")
+            _MkThemeEngine.apply_style_sheet(self.title_lbl, "font-size: 20px; font-weight: bold; color: #f8fafc;")
         else:
-            self.title_lbl.setStyleSheet("font-size: 20px; font-weight: bold; color: #0f172a;")
+            _MkThemeEngine.apply_style_sheet(self.title_lbl, "font-size: 20px; font-weight: bold; color: #0f172a;")
 
     def refresh_data(self, auto_loading: bool = True):
         def _fetch():

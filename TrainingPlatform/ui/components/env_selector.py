@@ -6,6 +6,7 @@ Features:
 - EnvironmentSelectorWidget: Dropdown + Refresh + Browse + Status Badges + Embedded Terminal Console
 - Reusable across Training, Inference, and Model Export dialogs
 """
+from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 import os
 import sys
 import re
@@ -96,7 +97,7 @@ class SegmentedPillToggle(QFrame):
 
     def _apply_style(self):
         if self._is_dark:
-            self.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self, """
                 QFrame {
                     background-color: #18181b;
                     border: 1px solid #27272a;
@@ -107,7 +108,7 @@ class SegmentedPillToggle(QFrame):
                 is_active = (idx == self._current_index)
                 icon_cls, _ = self._tabs_data[idx]
                 if is_active:
-                    btn.setStyleSheet("""
+                    _MkThemeEngine.apply_style_sheet(btn, """
                         QPushButton {
                             background-color: #27272a;
                             color: #f8fafc;
@@ -121,7 +122,7 @@ class SegmentedPillToggle(QFrame):
                     if icon_cls:
                         btn.setIcon(icon_cls.regular(size=14, color="#38bdf8"))
                 else:
-                    btn.setStyleSheet("""
+                    _MkThemeEngine.apply_style_sheet(btn, """
                         QPushButton {
                             background-color: transparent;
                             color: #94a3b8;
@@ -139,7 +140,7 @@ class SegmentedPillToggle(QFrame):
                     if icon_cls:
                         btn.setIcon(icon_cls.regular(size=14, color="#94a3b8"))
         else:
-            self.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self, """
                 QFrame {
                     background-color: #f1f5f9;
                     border: 1px solid #e2e8f0;
@@ -150,7 +151,7 @@ class SegmentedPillToggle(QFrame):
                 is_active = (idx == self._current_index)
                 icon_cls, _ = self._tabs_data[idx]
                 if is_active:
-                    btn.setStyleSheet("""
+                    _MkThemeEngine.apply_style_sheet(btn, """
                         QPushButton {
                             background-color: #ffffff;
                             color: #0f172a;
@@ -164,7 +165,7 @@ class SegmentedPillToggle(QFrame):
                     if icon_cls:
                         btn.setIcon(icon_cls.regular(size=14, color="#0284c7"))
                 else:
-                    btn.setStyleSheet("""
+                    _MkThemeEngine.apply_style_sheet(btn, """
                         QPushButton {
                             background-color: transparent;
                             color: #64748b;
@@ -263,14 +264,14 @@ class EnvironmentConsoleViewer(QFrame):
 
     def _apply_style(self):
         if self._is_dark:
-            self.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self, """
                 QFrame#EnvConsoleCard {
                     background-color: #09090b;
                     border: 1px solid #27272a;
                     border-radius: 6px;
                 }
             """)
-            self.editor.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.editor, """
                 QPlainTextEdit {
                     background: transparent;
                     color: #e2e8f0;
@@ -297,19 +298,19 @@ class EnvironmentConsoleViewer(QFrame):
                     background-color: #27272a;
                 }
             """
-            self.btn_copy.setStyleSheet(btn_qss)
-            self.btn_clear.setStyleSheet(btn_qss)
+            _MkThemeEngine.apply_style_sheet(self.btn_copy, btn_qss)
+            _MkThemeEngine.apply_style_sheet(self.btn_clear, btn_qss)
             self.btn_copy.setIcon(PhCopy.regular(size=12, color="#a1a1aa"))
             self.btn_clear.setIcon(PhTrash.regular(size=12, color="#a1a1aa"))
         else:
-            self.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self, """
                 QFrame#EnvConsoleCard {
                     background-color: #f8fafc;
                     border: 1px solid #e2e8f0;
                     border-radius: 6px;
                 }
             """)
-            self.editor.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.editor, """
                 QPlainTextEdit {
                     background: transparent;
                     color: #0f172a;
@@ -336,8 +337,8 @@ class EnvironmentConsoleViewer(QFrame):
                     background-color: #f1f5f9;
                 }
             """
-            self.btn_copy.setStyleSheet(btn_qss)
-            self.btn_clear.setStyleSheet(btn_qss)
+            _MkThemeEngine.apply_style_sheet(self.btn_copy, btn_qss)
+            _MkThemeEngine.apply_style_sheet(self.btn_clear, btn_qss)
             self.btn_copy.setIcon(PhCopy.regular(size=12, color="#64748b"))
             self.btn_clear.setIcon(PhTrash.regular(size=12, color="#64748b"))
 
@@ -364,7 +365,7 @@ class StatusBadge(QLabel):
             "neutral": "background-color: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;"
         }
         style_str = styles.get(badge_type, styles["neutral"])
-        self.setStyleSheet(f"""
+        _MkThemeEngine.apply_style_sheet(self, f"""
             QLabel {{
                 {style_str}
                 border-radius: 11px;
@@ -403,7 +404,7 @@ class EnvironmentSelectorWidget(QWidget):
         top_row.setSpacing(8)
 
         lbl_env = QLabel("执行环境:")
-        lbl_env.setStyleSheet("font-size: 12px; font-weight: 600; color: #64748b; background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(lbl_env, "font-size: 12px; font-weight: 600; color: #64748b; background: transparent; border: none;")
         top_row.addWidget(lbl_env)
 
         self.combo_env = RoundedComboBox(self, is_dark=self._is_dark, popup_radius=10)
@@ -629,6 +630,6 @@ class EnvironmentSelectorWidget(QWidget):
                 background-color: #3f3f46;
             }
         """
-        self.btn_refresh.setStyleSheet(btn_style)
-        self.btn_browse.setStyleSheet(btn_style)
-        self.btn_test.setStyleSheet(btn_style)
+        _MkThemeEngine.apply_style_sheet(self.btn_refresh, btn_style)
+        _MkThemeEngine.apply_style_sheet(self.btn_browse, btn_style)
+        _MkThemeEngine.apply_style_sheet(self.btn_test, btn_style)

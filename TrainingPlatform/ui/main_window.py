@@ -11,6 +11,7 @@ Refactored to a modern "Project-Centric" architecture (similar to Ultralytics Pl
   - ProjectCreateDialog (Lightweight project creator)
   - TrainCreateDialog (Local YOLO training launcher)
 """
+from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 import os
 import sys
 from PySide6.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout,
@@ -67,7 +68,7 @@ class SidebarAddButton(QPushButton):
         self.setFixedSize(26, 26)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setToolTip("新建项目")
-        self.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self, """
             QPushButton#SidebarBtnAddProject,
             QPushButton#SidebarBtnAddProject:hover,
             QPushButton#SidebarBtnAddProject:pressed,
@@ -128,7 +129,7 @@ class SidebarProjectDeleteButton(QPushButton):
         self._is_hovered = False
         self._is_pressed = False
         self.hide()
-        self.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self, """
             QPushButton {
                 border: none;
                 background-color: transparent;
@@ -577,7 +578,7 @@ class MainWindow(MkWindow):
     def _update_theme_toggle_style(self):
         hover_bg = "rgba(255, 255, 255, 0.12)" if self.is_dark_mode else "rgba(0, 0, 0, 0.06)"
         press_bg = "rgba(255, 255, 255, 0.20)" if self.is_dark_mode else "rgba(0, 0, 0, 0.12)"
-        self.btn_theme_toggle.setStyleSheet(f"""
+        _MkThemeEngine.apply_style_sheet(self.btn_theme_toggle, f"""
             QPushButton#TitlebarThemeToggle {{
                 border: none;
                 outline: none;
@@ -625,7 +626,7 @@ class MainWindow(MkWindow):
             normal_radius = getattr(self, "_border_radius", 10)
 
             if self.container_frame:
-                self.container_frame.setStyleSheet(f"""
+                _MkThemeEngine.apply_style_sheet(self.container_frame, f"""
                     QWidget#MkWindowContainer, QFrame#MkWindowContainer {{
                         background-color: {window_bg};
                         border: 1px solid {border_color};
@@ -640,10 +641,11 @@ class MainWindow(MkWindow):
         # Fast dynamic property update on container_frame only — zero recursive restyling lag
         max_str = "true" if is_max else "false"
         if self.container_frame:
-            self.container_frame.setProperty("mk_maximized", max_str)
-            st = self.container_frame.style()
-            st.unpolish(self.container_frame)
-            st.polish(self.container_frame)
+            if self.container_frame.property("mk_maximized") != max_str:
+                self.container_frame.setProperty("mk_maximized", max_str)
+                st = self.container_frame.style()
+                st.unpolish(self.container_frame)
+                st.polish(self.container_frame)
         if self.titlebar:
             self.titlebar.set_maximized_state(is_max)
         if hasattr(self, "_enable_native_corners"):
@@ -660,12 +662,7 @@ class MainWindow(MkWindow):
         super().setStyleSheet(qss)
 
     def toggle_light_dark_theme(self):
-        self.is_dark_mode = not self.is_dark_mode
-        self._last_styled_theme = None
+        self.is_dark_mode = not ThemeEngine.is_dark()
         use_theme("暗黑模式" if self.is_dark_mode else "默认")
-        self.sidebar.set_border_right("none")
-        self.titlebar._border_bottom = "none"
-        self.titlebar.apply_theme_colors()
         self._update_theme_toggle_style()
         self.btn_add_project.update()
-        self._sync_sidebar_selection(self.current_nav_id)

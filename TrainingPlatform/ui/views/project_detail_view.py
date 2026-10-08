@@ -8,6 +8,7 @@ Benchmarked against Ultralytics Platform Project Dashboard:
   - Left Pane: Master Task List + Mini Weight Upload Zone
   - Right Pane: Real-time MetricChart + Status Controls + MkConsole Terminal Output
 """
+from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 import os
 from typing import Any
 try:
@@ -76,18 +77,18 @@ class ProjectDetailView(MkQWidget):
         row_title.setSpacing(10)
 
         self.lbl_title = QLabel("项目详情")
-        self.lbl_title.setStyleSheet("font-size: 22px; font-weight: bold; color: #1e293b;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_title, "font-size: 22px; font-weight: bold; color: #1e293b;")
         row_title.addWidget(self.lbl_title)
 
         self.lbl_task_type = QLabel("detect")
-        self.lbl_task_type.setStyleSheet("background: #eff6ff; color: #2563eb; font-weight: bold; padding: 2px 8px; border-radius: 4px; font-size: 12px;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_task_type, "background: #eff6ff; color: #2563eb; font-weight: bold; padding: 2px 8px; border-radius: 4px; font-size: 12px;")
         row_title.addWidget(self.lbl_task_type)
         row_title.addStretch()
 
         v_info.addLayout(row_title)
 
         self.lbl_desc = QLabel("加载中...")
-        self.lbl_desc.setStyleSheet("color: #64748b; font-size: 13px;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_desc, "color: #64748b; font-size: 13px;")
         v_info.addWidget(self.lbl_desc)
 
         h_layout.addLayout(v_info, stretch=1)
@@ -95,7 +96,7 @@ class ProjectDetailView(MkQWidget):
         # Right Action Buttons
         self.btn_new_train = MkButton("新建训练任务", btn_type="primary")
         self.btn_new_train.setIcon(PhPlus.bold(size=15))
-        self.btn_new_train.setStyleSheet("font-weight: bold; padding: 8px 16px;")
+        _MkThemeEngine.apply_style_sheet(self.btn_new_train, "font-weight: bold; padding: 8px 16px;")
         self.btn_new_train.clicked.connect(self.open_train_dialog)
         h_layout.addWidget(self.btn_new_train)
 
@@ -155,12 +156,12 @@ class ProjectDetailView(MkQWidget):
         subtitle = QLabel("您可以直接在此拖放已有 PyTorch .pt 权重文件进行导入管理，或者发起全新的本地 YOLO 训练任务。")
         subtitle.setAlignment(Qt.AlignCenter)
         subtitle.setWordWrap(True)
-        subtitle.setStyleSheet("color: #64748b; font-size: 13px; max-width: 500px;")
+        _MkThemeEngine.apply_style_sheet(subtitle, "color: #64748b; font-size: 13px; max-width: 500px;")
         card_layout.addWidget(subtitle)
 
         btn_cta = MkButton("立即发起首个本地训练任务", btn_type="primary")
         btn_cta.setIcon(PhPlay.regular(size=16))
-        btn_cta.setStyleSheet("font-size: 15px; font-weight: bold; padding: 12px 28px;")
+        _MkThemeEngine.apply_style_sheet(btn_cta, "font-size: 15px; font-weight: bold; padding: 12px 28px;")
         btn_cta.clicked.connect(self.open_train_dialog)
         card_layout.addWidget(btn_cta)
 
@@ -194,7 +195,7 @@ class ProjectDetailView(MkQWidget):
                 border: none;
             }
         """
-        self.splitter.setStyleSheet(spl_qss)
+        _MkThemeEngine.apply_style_sheet(self.splitter, spl_qss)
 
         # ── Left Pane: Models / Tasks Picker (Width ~ 300px) ──
         left_pane = MkQWidget(role="transparent")
@@ -220,7 +221,7 @@ class ProjectDetailView(MkQWidget):
 
         # Mini drop area for existing .pt models
         lbl_drop = QLabel("快速添加已有权重 (.pt):")
-        lbl_drop.setStyleSheet("color: #94a3b8; font-size: 11px;")
+        _MkThemeEngine.apply_style_sheet(lbl_drop, "color: #94a3b8; font-size: 11px;")
         left_layout.addWidget(lbl_drop)
 
         self.mini_upload = MkUpload(accept_filters=[".pt", "*.pt"], multiple=True, max_size_mb=2048)
@@ -241,7 +242,7 @@ class ProjectDetailView(MkQWidget):
         self.rv_splitter.setChildrenCollapsible(False)
         self.rv_splitter.setCollapsible(0, False)
         self.rv_splitter.setCollapsible(1, False)
-        self.rv_splitter.setStyleSheet(spl_qss)
+        _MkThemeEngine.apply_style_sheet(self.rv_splitter, spl_qss)
 
         # Top Container: 3 Academic Thesis Charts (Requirement 2 & Image 1, 2, 3)
         charts_container = QWidget()
@@ -254,13 +255,13 @@ class ProjectDetailView(MkQWidget):
         metrics_hdr = QHBoxLayout()
         metrics_hdr.setSpacing(8)
         self.lbl_metrics_title = QLabel("核心评估指标对比 (3/3)")
-        self.lbl_metrics_title.setStyleSheet("font-size: 14px; font-weight: 700; color: #0f172a;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_metrics_title, "font-size: 14px; font-weight: 700; color: #0f172a;")
         metrics_hdr.addWidget(self.lbl_metrics_title)
 
         metrics_hdr.addStretch()
 
         self.lbl_metrics_hint = QLabel("数据实时读取自 results.csv · 悬停可查看数值与准线 · 支持全屏")
-        self.lbl_metrics_hint.setStyleSheet("color: #94a3b8; font-size: 11px;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_metrics_hint, "color: #94a3b8; font-size: 11px;")
         metrics_hdr.addWidget(self.lbl_metrics_hint)
 
         charts_layout.addLayout(metrics_hdr)
@@ -297,15 +298,15 @@ class ProjectDetailView(MkQWidget):
         s_bar.setSpacing(10)
 
         self.lbl_cur_task = QLabel("任务: -")
-        self.lbl_cur_task.setStyleSheet("font-weight: bold; font-size: 14px; color: #1e293b;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_cur_task, "font-weight: bold; font-size: 14px; color: #1e293b;")
         s_bar.addWidget(self.lbl_cur_task)
 
         self.lbl_cur_status = QLabel("待定")
-        self.lbl_cur_status.setStyleSheet("padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 12px; background: #e2e8f0; color: #475569;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_cur_status, "padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 12px; background: #e2e8f0; color: #475569;")
         s_bar.addWidget(self.lbl_cur_status)
 
         self.lbl_cur_model = QLabel("模型: -")
-        self.lbl_cur_model.setStyleSheet("color: #64748b; font-size: 12px;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_cur_model, "color: #64748b; font-size: 12px;")
         s_bar.addWidget(self.lbl_cur_model)
 
         self.progress_bar = MkProgressBar()
@@ -314,7 +315,7 @@ class ProjectDetailView(MkQWidget):
 
         # Action Buttons on status bar
         self.btn_view_detail = MkButton("进入详情页面 →", btn_type="primary")
-        self.btn_view_detail.setStyleSheet("font-weight: bold; padding: 4px 12px;")
+        _MkThemeEngine.apply_style_sheet(self.btn_view_detail, "font-weight: bold; padding: 4px 12px;")
         self.btn_view_detail.clicked.connect(lambda: self.open_task_detail(self.current_task_id) if self.current_task_id else None)
         s_bar.addWidget(self.btn_view_detail)
 
@@ -422,8 +423,8 @@ class ProjectDetailView(MkQWidget):
                 self.header_card.setVisible(True)
                 QTimer.singleShot(40, self._ensure_splitter_sizes)
             self._render_task_list(tasks, preserve_console=preserve_console, defer_heavy=defer_heavy)
-            # 【空闲静默预热】在页面平稳过渡完成 1.5 秒后（用户真正浏览时）再静默预加载详情页到内存，保证切页动画绝对 60 FPS
-            QTimer.singleShot(1500, self._warmup_experiment_detail_view)
+            # Build the experiment inspector when it is opened, rather than
+            # adding hundreds of hidden widgets to every theme update.
 
     def _warmup_experiment_detail_view(self):
         """Idle pre-warming: quietly instantiate ExperimentDetailView during idle event loop."""
@@ -632,15 +633,15 @@ class ProjectDetailView(MkQWidget):
         self.lbl_cur_status.setText(status)
 
         if status == "RUNNING":
-            self.lbl_cur_status.setStyleSheet("padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; background: #dbeafe; color: #1d4ed8;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_cur_status, "padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; background: #dbeafe; color: #1d4ed8;")
             self.btn_stop_task.setVisible(True)
             self.btn_resume_task.setVisible(False)
         elif status == "SUCCESS":
-            self.lbl_cur_status.setStyleSheet("padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; background: #dcfce7; color: #15803d;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_cur_status, "padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; background: #dcfce7; color: #15803d;")
             self.btn_stop_task.setVisible(False)
             self.btn_resume_task.setVisible(True)
         else:
-            self.lbl_cur_status.setStyleSheet("padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; background: #fee2e2; color: #b91c1c;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_cur_status, "padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; background: #fee2e2; color: #b91c1c;")
             self.btn_stop_task.setVisible(False)
             self.btn_resume_task.setVisible(True)
 
@@ -820,7 +821,7 @@ class ProjectDetailView(MkQWidget):
     def on_task_started(self, task_id):
         if self.current_task_id == task_id:
             self.lbl_cur_status.setText("RUNNING")
-            self.lbl_cur_status.setStyleSheet("padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; background: #dbeafe; color: #1d4ed8;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_cur_status, "padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; background: #dbeafe; color: #1d4ed8;")
             self.btn_stop_task.setVisible(True)
             self.btn_resume_task.setVisible(False)
             self.append_terminal_line(f"[INFO] 训练任务 [{task_id}] 已在后台启动！")
@@ -843,10 +844,10 @@ class ProjectDetailView(MkQWidget):
         if self.current_task_id == task_id:
             if success:
                 self.lbl_cur_status.setText("SUCCESS")
-                self.lbl_cur_status.setStyleSheet("padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; background: #dcfce7; color: #15803d;")
+                _MkThemeEngine.apply_style_sheet(self.lbl_cur_status, "padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; background: #dcfce7; color: #15803d;")
             else:
                 self.lbl_cur_status.setText("STOPPED")
-                self.lbl_cur_status.setStyleSheet("padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; background: #fee2e2; color: #b91c1c;")
+                _MkThemeEngine.apply_style_sheet(self.lbl_cur_status, "padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; background: #fee2e2; color: #b91c1c;")
                 self.append_terminal_line(f"[FAILED] 任务执行失败: {msg}")
             self.btn_stop_task.setVisible(False)
             self.btn_resume_task.setVisible(True)
@@ -856,22 +857,22 @@ class ProjectDetailView(MkQWidget):
         is_dark = ThemeEngine.is_dark()
         if is_dark:
             if hasattr(self, 'lbl_title'):
-                self.lbl_title.setStyleSheet("font-size: 22px; font-weight: bold; color: #f4f4f5;")
+                _MkThemeEngine.apply_style_sheet(self.lbl_title, "font-size: 22px; font-weight: bold; color: #f4f4f5;")
             if hasattr(self, 'empty_title'):
-                self.empty_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #f4f4f5;")
+                _MkThemeEngine.apply_style_sheet(self.empty_title, "font-size: 18px; font-weight: bold; color: #f4f4f5;")
             if hasattr(self, 'lbl_cur_task'):
-                self.lbl_cur_task.setStyleSheet("font-weight: bold; font-size: 14px; color: #f4f4f5;")
+                _MkThemeEngine.apply_style_sheet(self.lbl_cur_task, "font-weight: bold; font-size: 14px; color: #f4f4f5;")
             if hasattr(self, 'lbl_metrics_title'):
-                self.lbl_metrics_title.setStyleSheet("font-size: 14px; font-weight: bold; color: #f4f4f5;")
+                _MkThemeEngine.apply_style_sheet(self.lbl_metrics_title, "font-size: 14px; font-weight: bold; color: #f4f4f5;")
         else:
             if hasattr(self, 'lbl_title'):
-                self.lbl_title.setStyleSheet("font-size: 22px; font-weight: bold; color: #1e293b;")
+                _MkThemeEngine.apply_style_sheet(self.lbl_title, "font-size: 22px; font-weight: bold; color: #1e293b;")
             if hasattr(self, 'empty_title'):
-                self.empty_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #1e293b;")
+                _MkThemeEngine.apply_style_sheet(self.empty_title, "font-size: 18px; font-weight: bold; color: #1e293b;")
             if hasattr(self, 'lbl_cur_task'):
-                self.lbl_cur_task.setStyleSheet("font-weight: bold; font-size: 14px; color: #1e293b;")
+                _MkThemeEngine.apply_style_sheet(self.lbl_cur_task, "font-weight: bold; font-size: 14px; color: #1e293b;")
             if hasattr(self, 'lbl_metrics_title'):
-                self.lbl_metrics_title.setStyleSheet("font-size: 14px; font-weight: 700; color: #0f172a;")
+                _MkThemeEngine.apply_style_sheet(self.lbl_metrics_title, "font-size: 14px; font-weight: 700; color: #0f172a;")
 
 
         # Sync splitters styling (clean invisible handles for seamless card spacing)
@@ -894,9 +895,9 @@ class ProjectDetailView(MkQWidget):
             }
         """
         if hasattr(self, "splitter"):
-            self.splitter.setStyleSheet(spl_qss)
+            _MkThemeEngine.apply_style_sheet(self.splitter, spl_qss)
         if hasattr(self, "rv_splitter"):
-            self.rv_splitter.setStyleSheet(spl_qss)
+            _MkThemeEngine.apply_style_sheet(self.rv_splitter, spl_qss)
 
         if hasattr(self, 'chart_precision'):
             self.chart_precision.set_theme(is_dark)
@@ -904,10 +905,6 @@ class ProjectDetailView(MkQWidget):
             self.chart_recall.set_theme(is_dark)
         if hasattr(self, 'chart_map50_95'):
             self.chart_map50_95.set_theme(is_dark)
-        if hasattr(self, 'experiment_detail_view') and self.experiment_detail_view:
-            if self.experiment_detail_view.isVisible():
-                self.experiment_detail_view.set_theme(is_dark)
-
         pass
 
 

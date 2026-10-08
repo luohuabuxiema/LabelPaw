@@ -3,6 +3,7 @@
 Model Management & Export View for AI Vision Training Platform
 Using MonkeyQt MkCard, MkButton, MkComboBox, MkDataTable
 """
+from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 import os
 import subprocess
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
@@ -29,7 +30,7 @@ class ExportModelDialog(QDialog):
 
         self.container_card = QFrame(self)
         self.container_card.setObjectName("DialogContainer")
-        self.container_card.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.container_card, """
             QFrame#DialogContainer {
                 background-color: #ffffff;
                 border: 1px solid #e2e8f0;
@@ -53,7 +54,7 @@ class ExportModelDialog(QDialog):
         header_layout.setContentsMargins(0, 0, 0, 0)
 
         title_lbl = QLabel(f"导出模型: {model_info['name']}")
-        title_lbl.setStyleSheet("font-size: 16px; font-weight: bold; color: #0f172a;")
+        _MkThemeEngine.apply_style_sheet(title_lbl, "font-size: 16px; font-weight: bold; color: #0f172a;")
         header_layout.addWidget(title_lbl)
         header_layout.addStretch()
 
@@ -62,7 +63,7 @@ class ExportModelDialog(QDialog):
         btn_close.setToolTip("关闭")
         btn_close.setFixedSize(28, 28)
         btn_close.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_close.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(btn_close, """
             QPushButton {
                 border: none;
                 background-color: transparent;
@@ -146,7 +147,7 @@ class ModelView(MkQWidget):
         # Header Bar
         hdr_layout = QHBoxLayout()
         title_lbl = QLabel("模型产出与导出管理 Model Management")
-        title_lbl.setStyleSheet("font-size: 20px; font-weight: bold; color: #303133;")
+        _MkThemeEngine.apply_style_sheet(title_lbl, "font-size: 20px; font-weight: bold; color: #303133;")
         hdr_layout.addWidget(title_lbl)
         hdr_layout.addStretch()
         layout.addLayout(hdr_layout)
@@ -163,7 +164,7 @@ class ModelView(MkQWidget):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.verticalHeader().setVisible(False)
         self.table.setShowGrid(False)
-        self.table.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.table, """
             QTableWidget { background: white; border: 1px solid #e2e8f0; border-radius: 6px; }
             QHeaderView::section { background: #f8fafc; font-weight: bold; color: #475569; border: none; border-bottom: 1px solid #e2e8f0; height: 34px; }
             QTableWidget::item { border-bottom: 1px solid #f1f5f9; padding: 8px; }
@@ -197,7 +198,7 @@ class ModelView(MkQWidget):
             btn_export.clicked.connect(lambda _, info=m: self.export_model(info))
 
             btn_del = MkButton("删除")
-            btn_del.setStyleSheet("background-color: #fef0f0; color: #f56c6c; border: 1px solid #fde2e2;")
+            _MkThemeEngine.apply_style_sheet(btn_del, "background-color: #fef0f0; color: #f56c6c; border: 1px solid #fde2e2;")
             btn_del.clicked.connect(lambda _, mid=m["id"]: self.delete_model(mid))
 
             b_layout.addWidget(btn_open)

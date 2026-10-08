@@ -3,6 +3,7 @@
 Dataset Management View for AI Vision Training Platform
 Includes upload, structure inspection, zip extraction, and dataset tools.
 """
+from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 import os
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                QTableWidget, QTableWidgetItem, QHeaderView,
@@ -28,7 +29,7 @@ class ImportDatasetDialog(QDialog):
 
         self.container_card = QFrame(self)
         self.container_card.setObjectName("DialogContainer")
-        self.container_card.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.container_card, """
             QFrame#DialogContainer {
                 background-color: #ffffff;
                 border: 1px solid #e2e8f0;
@@ -52,7 +53,7 @@ class ImportDatasetDialog(QDialog):
         header_layout.setContentsMargins(0, 0, 0, 0)
 
         title_lbl = QLabel("导入/上传 YOLO 数据集")
-        title_lbl.setStyleSheet("font-size: 16px; font-weight: bold; color: #0f172a;")
+        _MkThemeEngine.apply_style_sheet(title_lbl, "font-size: 16px; font-weight: bold; color: #0f172a;")
         header_layout.addWidget(title_lbl)
         header_layout.addStretch()
 
@@ -61,7 +62,7 @@ class ImportDatasetDialog(QDialog):
         btn_close.setToolTip("关闭")
         btn_close.setFixedSize(28, 28)
         btn_close.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_close.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(btn_close, """
             QPushButton {
                 border: none;
                 background-color: transparent;
@@ -107,7 +108,7 @@ class ImportDatasetDialog(QDialog):
         # Inspection result preview
         self.lbl_inspect = QLabel("请选择有效的 YOLO 数据集路径进行体检分析...")
         self.lbl_inspect.setWordWrap(True)
-        self.lbl_inspect.setStyleSheet("color: #909399; font-size: 12px; border: 1px dashed #dcdfe6; padding: 10px; border-radius: 4px;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_inspect, "color: #909399; font-size: 12px; border: 1px dashed #dcdfe6; padding: 10px; border-radius: 4px;")
         layout.addWidget(self.lbl_inspect)
 
         self.inspection_res = None
@@ -167,13 +168,13 @@ class ImportDatasetDialog(QDialog):
 
         if not res["valid"]:
             self.lbl_inspect.setText(f"数据集体检未通过: {res['error_msg']}")
-            self.lbl_inspect.setStyleSheet("color: #f56c6c; font-size: 12px; border: 1px dashed #fde2e2; padding: 10px; border-radius: 4px;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_inspect, "color: #f56c6c; font-size: 12px; border: 1px dashed #fde2e2; padding: 10px; border-radius: 4px;")
         else:
             txt = (f"数据集体检合格！\n"
                    f"总图片数: {res['image_count']} (Train: {res['train_images']} | Val: {res['val_images']} | Test: {res['test_images']})\n"
                    f"类别数: {res['class_count']} | 类别名称: {', '.join(res['classes'][:8])}")
             self.lbl_inspect.setText(txt)
-            self.lbl_inspect.setStyleSheet("color: #67c23a; font-size: 12px; border: 1px dashed #e1f3d8; padding: 10px; border-radius: 4px;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_inspect, "color: #67c23a; font-size: 12px; border: 1px dashed #e1f3d8; padding: 10px; border-radius: 4px;")
 
             if not self.input_name.text():
                 self.input_name.setText(os.path.basename(path))
@@ -201,7 +202,7 @@ class DatasetView(MkQWidget):
         # Header Bar
         hdr_layout = QHBoxLayout()
         title_lbl = QLabel("数据集管理 Dataset Management")
-        title_lbl.setStyleSheet("font-size: 20px; font-weight: bold; color: #303133;")
+        _MkThemeEngine.apply_style_sheet(title_lbl, "font-size: 20px; font-weight: bold; color: #303133;")
         hdr_layout.addWidget(title_lbl)
         hdr_layout.addStretch()
 
@@ -229,7 +230,7 @@ class DatasetView(MkQWidget):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.verticalHeader().setVisible(False)
         self.table.setShowGrid(False)
-        self.table.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.table, """
             QTableWidget { background: white; border: 1px solid #e2e8f0; border-radius: 6px; }
             QHeaderView::section { background: #f8fafc; font-weight: bold; color: #475569; border: none; border-bottom: 1px solid #e2e8f0; height: 34px; }
             QTableWidget::item { border-bottom: 1px solid #f1f5f9; padding: 8px; }
@@ -253,7 +254,7 @@ class DatasetView(MkQWidget):
             self.table.setItem(row, 5, QTableWidgetItem(str(d["path"])))
 
             btn_del = MkButton("删除记录")
-            btn_del.setStyleSheet("background-color: #fef0f0; color: #f56c6c; border: 1px solid #fde2e2;")
+            _MkThemeEngine.apply_style_sheet(btn_del, "background-color: #fef0f0; color: #f56c6c; border: 1px solid #fde2e2;")
             btn_del.clicked.connect(lambda _, did=d["id"]: self.delete_dataset(did))
             self.table.setCellWidget(row, 6, btn_del)
 

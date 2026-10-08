@@ -3,6 +3,7 @@
 New Training Task Configuration View for AI Vision Training Platform
 Using MonkeyQt MkForm, MkInput, MkComboBox, MkSlider, MkButton
 """
+from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                QScrollArea, QMessageBox)
 from PySide6.QtCore import Signal, Qt
@@ -26,12 +27,12 @@ class TrainCreateView(MkQWidget):
 
         # Title
         title_lbl = QLabel("创建训练任务 New Training Task")
-        title_lbl.setStyleSheet("font-size: 20px; font-weight: bold; color: #303133;")
+        _MkThemeEngine.apply_style_sheet(title_lbl, "font-size: 20px; font-weight: bold; color: #303133;")
         main_layout.addWidget(title_lbl)
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setStyleSheet("QScrollArea { border: none; background: transparent; }")
+        _MkThemeEngine.apply_style_sheet(scroll, "QScrollArea { border: none; background: transparent; }")
 
         container = QWidget()
         c_layout = QVBoxLayout(container)
@@ -133,7 +134,7 @@ class TrainCreateView(MkQWidget):
         # Start Button
         self.btn_start = MkButton("一键开启 YOLO 模型训练")
         self.btn_start.setIcon(PhPlay.regular())
-        self.btn_start.setStyleSheet("font-size: 16px; font-weight: bold; padding: 12px;")
+        _MkThemeEngine.apply_style_sheet(self.btn_start, "font-size: 16px; font-weight: bold; padding: 12px;")
         self.btn_start.clicked.connect(self.start_training)
         c_layout.addWidget(self.btn_start)
 

@@ -3,6 +3,7 @@
 Real-time Training Monitor View for AI Vision Training Platform
 Using MonkeyQt MkConsole, MkProgressBar, MetricChart, MkCard, MkButton
 """
+from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                QTableWidget, QTableWidgetItem, QHeaderView,
                                QTextEdit, QMessageBox, QSplitter)
@@ -28,7 +29,7 @@ class TrainMonitorView(MkQWidget):
         # Header Bar
         hdr_layout = QHBoxLayout()
         title_lbl = QLabel("实时训练监控 Training Monitor")
-        title_lbl.setStyleSheet("font-size: 20px; font-weight: bold; color: #303133;")
+        _MkThemeEngine.apply_style_sheet(title_lbl, "font-size: 20px; font-weight: bold; color: #303133;")
         hdr_layout.addWidget(title_lbl)
         hdr_layout.addStretch()
 
@@ -40,7 +41,7 @@ class TrainMonitorView(MkQWidget):
 
         self.btn_stop = MkButton("终止训练")
         self.btn_stop.setIcon(PhStop.regular())
-        self.btn_stop.setStyleSheet("background-color: #fef0f0; color: #f56c6c; border: 1px solid #fde2e2;")
+        _MkThemeEngine.apply_style_sheet(self.btn_stop, "background-color: #fef0f0; color: #f56c6c; border: 1px solid #fde2e2;")
         self.btn_stop.clicked.connect(self.stop_current_task)
         hdr_layout.addWidget(self.btn_stop)
 
@@ -56,7 +57,7 @@ class TrainMonitorView(MkQWidget):
         s_layout = status_card.content_layout
 
         self.lbl_status = QLabel("状态: 待定")
-        self.lbl_status.setStyleSheet("font-size: 14px; font-weight: bold; color: #409eff;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_status, "font-size: 14px; font-weight: bold; color: #409eff;")
 
         self.lbl_model = QLabel("模型: -")
         self.lbl_epoch = QLabel("Epoch: 0 / 0")
@@ -65,7 +66,7 @@ class TrainMonitorView(MkQWidget):
         self.progress_bar.percentage = 0
 
         self.lbl_map50 = QLabel("mAP50: 0.0000")
-        self.lbl_map50.setStyleSheet("font-size: 14px; font-weight: bold; color: #67c23a;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_map50, "font-size: 14px; font-weight: bold; color: #67c23a;")
 
         box_info = QHBoxLayout()
         box_info.addWidget(self.lbl_status)
@@ -90,7 +91,7 @@ class TrainMonitorView(MkQWidget):
 
         self.console = QTextEdit()
         self.console.setReadOnly(True)
-        self.console.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.console, """
             QTextEdit {
                 background-color: #1e1e1e;
                 color: #67c23a;

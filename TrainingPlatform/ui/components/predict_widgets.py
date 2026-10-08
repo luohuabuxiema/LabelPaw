@@ -7,6 +7,7 @@ Benchmark: Images 1, 2, 4, 5:
 - Built-in example thumbnail cards (bus.jpg, zidane.jpg, browse card) with click-to-predict (Images 1, 2, 5)
 - Floating action buttons on top-right of preview (download, re-upload, clear) (Image 1)
 """
+from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 import os
 from PySide6.QtWidgets import (
     QWidget, QFrame, QVBoxLayout, QHBoxLayout, QLabel,
@@ -135,7 +136,7 @@ class DropzoneWidget(MkQWidget):
 
         self.lbl_icon = QLabel()
         self.lbl_icon.setPixmap(PhUploadSimple.regular(size=40, color="#3b82f6").pixmap(40, 40))
-        self.lbl_icon.setStyleSheet("background: transparent;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_icon, "background: transparent;")
         layout.addWidget(self.lbl_icon, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # Main Title
@@ -170,16 +171,16 @@ class DropzoneWidget(MkQWidget):
         sub_color = "#94a3b8" if self.is_dark else "#475569"
         format_color = "#64748b" if self.is_dark else "#94a3b8"
 
-        self.setStyleSheet(f"""
+        _MkThemeEngine.apply_style_sheet(self, f"""
             QFrame#DropzoneWidget {{
                 background-color: {bg_col};
                 border: 2px dashed {border_col};
                 border-radius: 12px;
             }}
         """)
-        self.lbl_title.setStyleSheet(f"color: {title_color}; background: transparent;")
-        self.lbl_sub.setStyleSheet(f"color: {sub_color}; background: transparent;")
-        self.lbl_formats.setStyleSheet(f"color: {format_color}; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_title, f"color: {title_color}; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_sub, f"color: {sub_color}; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_formats, f"color: {format_color}; background: transparent;")
 
     def set_theme(self, is_dark: bool):
         self.is_dark = is_dark
@@ -284,7 +285,7 @@ class ExampleThumbCard(MkQWidget):
 
             self.lbl_title = QLabel(self.title)
             self.lbl_title.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
-            self.lbl_title.setStyleSheet("color: #ffffff; background: transparent;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_title, "color: #ffffff; background: transparent;")
             b_layout.addWidget(self.lbl_title)
             layout.addWidget(self.bottom_bar)
 
@@ -318,7 +319,7 @@ class ExampleThumbCard(MkQWidget):
         bg = "#1e293b" if self.is_dark else "#f8fafc"
 
         if self.is_browse_card:
-            self.setStyleSheet(f"""
+            _MkThemeEngine.apply_style_sheet(self, f"""
                 QFrame#ExampleThumbCard {{
                     background-color: {bg};
                     border: {border_w} dashed {border};
@@ -327,9 +328,9 @@ class ExampleThumbCard(MkQWidget):
             """)
             if hasattr(self, "lbl_title"):
                 col = "#94a3b8" if self.is_dark else "#475569"
-                self.lbl_title.setStyleSheet(f"color: {col}; background: transparent;")
+                _MkThemeEngine.apply_style_sheet(self.lbl_title, f"color: {col}; background: transparent;")
         else:
-            self.setStyleSheet(f"""
+            _MkThemeEngine.apply_style_sheet(self, f"""
                 QFrame#ExampleThumbCard {{
                     background-color: #0f172a;
                     border: {border_w} solid {border};
@@ -337,7 +338,7 @@ class ExampleThumbCard(MkQWidget):
                 }}
             """)
             if hasattr(self, "bottom_bar"):
-                self.bottom_bar.setStyleSheet("""
+                _MkThemeEngine.apply_style_sheet(self.bottom_bar, """
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                                                 stop:0 rgba(0, 0, 0, 0),
                                                 stop:1 rgba(0, 0, 0, 180));
@@ -427,7 +428,7 @@ class FloatingToolbarWidget(MkQWidget):
         bg = "rgba(15, 23, 42, 0.88)" if self.is_dark else "rgba(255, 255, 255, 0.95)"
         border = "rgba(51, 65, 85, 0.7)" if self.is_dark else "rgba(203, 213, 225, 0.9)"
         btn_hover = "rgba(51, 65, 85, 0.9)" if self.is_dark else "rgba(241, 245, 249, 1.0)"
-        self.setStyleSheet(f"""
+        _MkThemeEngine.apply_style_sheet(self, f"""
             QFrame#FloatingToolbar {{
                 background-color: {bg};
                 border: 1px solid {border};

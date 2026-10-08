@@ -6,6 +6,7 @@ Benchmarked strictly against Ultralytics HUB Export Management (Images 1-5):
 - Schema-driven Export Dialog with encapsulated atomic parameter fields
 - Expandable Format Cards with export history records, downloads, folder browsing, and deletion
 """
+from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 import os
 import sys
 import json
@@ -142,7 +143,7 @@ EXPORT_SPECS: Dict[str, Dict[str, Any]] = {
 def _make_field_header(title: str, tip: str = "") -> QWidget:
     """Creates a clean Chinese field title with integrated InfoIconButton popup tooltip."""
     w = QWidget()
-    w.setStyleSheet("background: transparent; border: none;")
+    _MkThemeEngine.apply_style_sheet(w, "background: transparent; border: none;")
     h = QHBoxLayout(w)
     h.setContentsMargins(0, 0, 0, 2)
     h.setSpacing(6)
@@ -151,7 +152,7 @@ def _make_field_header(title: str, tip: str = "") -> QWidget:
     lbl.setFont(QFont("Segoe UI", 10, QFont.Weight.DemiBold))
     is_dark = ThemeEngine.is_dark()
     title_color = "#f1f5f9" if is_dark else "#111827"
-    lbl.setStyleSheet(f"color: {title_color}; background: transparent; border: none;")
+    _MkThemeEngine.apply_style_sheet(lbl, f"color: {title_color}; background: transparent; border: none;")
     h.addWidget(lbl)
 
     if tip:
@@ -167,7 +168,7 @@ def _make_subtitle(text: str) -> QLabel:
     lbl.setFont(QFont("Segoe UI", 9))
     is_dark = ThemeEngine.is_dark()
     sub_color = "#9ca3af" if is_dark else "#6b7280"
-    lbl.setStyleSheet(f"color: {sub_color}; margin-bottom: 4px; background: transparent; border: none;")
+    _MkThemeEngine.apply_style_sheet(lbl, f"color: {sub_color}; margin-bottom: 4px; background: transparent; border: none;")
     return lbl
 
 
@@ -175,7 +176,7 @@ class BaseFormField(QWidget):
     """Base class for encapsulated form fields."""
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setStyleSheet("background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(self, "background: transparent; border: none;")
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 10)
         self.layout.setSpacing(3)
@@ -191,7 +192,7 @@ class ImageSizeField(BaseFormField):
         self.layout.addWidget(_make_field_header("图像尺寸", "输入模型推理的图像像素分辨率 (如 640x640)，有效范围 32 - 8192"))
         self.layout.addWidget(_make_subtitle("输入模型的正方形分辨率尺寸 (32-8192)"))
         self.edit = QLineEdit("640")
-        self.edit.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.edit, """
             QLineEdit {
                 background: #ffffff;
                 border: 1px solid #d1d5db;
@@ -219,7 +220,7 @@ class BatchSizeField(BaseFormField):
         self.layout.addWidget(_make_field_header("批次大小", "单次前向推理同时处理的图像数量，范围 1 - 64，通常部署设为 1"))
         self.layout.addWidget(_make_subtitle("单次推理批次大小 (1-32)"))
         self.edit = QLineEdit("1")
-        self.edit.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.edit, """
             QLineEdit {
                 background: #ffffff;
                 border: 1px solid #d1d5db;
@@ -248,7 +249,7 @@ class PrecisionField(BaseFormField):
         self.layout.addWidget(_make_subtitle("导出模型的数值量化精度"))
         self.combo = QComboBox()
         self.combo.addItems(["FP16 半精度加速 (推荐)", "FP32 全精度", "INT8 8位整型极致量化"])
-        self.combo.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.combo, """
             QComboBox {
                 background: #ffffff;
                 border: 1px solid #d1d5db;
@@ -322,7 +323,7 @@ class OpsetField(BaseFormField):
         self.layout.addWidget(_make_field_header("算子集版本", "ONNX 算子集规范版本 (9-23)，留空或 auto 为自动匹配最佳推荐版本"))
         self.layout.addWidget(_make_subtitle("ONNX 算子集版本 (留空或 auto 为自动推荐)"))
         self.edit = QLineEdit("auto")
-        self.edit.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.edit, """
             QLineEdit {
                 background: #ffffff;
                 border: 1px solid #d1d5db;
@@ -357,7 +358,7 @@ class PostProcessingField(BaseFormField):
             "集成非极大值抑制 (NMS 过滤)",
             "End-to-End 无 NMS 架构"
         ])
-        self.combo.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.combo, """
             QComboBox {
                 background: #ffffff;
                 border: 1px solid #d1d5db;
@@ -406,7 +407,7 @@ class TargetGpuField(BaseFormField):
             self.combo.addItem("CUDA:0 (默认首选显卡)", userData="0")
             self.combo.addItem("RTX 4090 (24 GB) [交叉编译目标]", userData="0")
 
-        self.combo.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.combo, """
             QComboBox {
                 background: #ffffff;
                 border: 1px solid #d1d5db;
@@ -431,7 +432,7 @@ class WorkspaceField(BaseFormField):
         self.layout.addWidget(_make_field_header("显存工作区大小", "TensorRT 构建优化网络时允许使用的最大临时显存 (1-32 GB)"))
         self.layout.addWidget(_make_subtitle("TensorRT 构建允许使用的显存大小 (1-32 GB，auto 为自动调整)"))
         self.edit = QLineEdit("auto")
-        self.edit.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.edit, """
             QLineEdit {
                 background: #ffffff;
                 border: 1px solid #d1d5db;
@@ -469,7 +470,7 @@ class RknnTargetField(BaseFormField):
             "rv1109 (轻量智能相机 1.2 TOPS)",
             "rk3399pro (3 TOPS)"
         ])
-        self.combo.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.combo, """
             QComboBox {
                 background: #ffffff;
                 border: 1px solid #d1d5db;
@@ -498,7 +499,7 @@ class HailoArchField(BaseFormField):
             "Hailo-8L (树莓派 5 官方 AI Kit 13 TOPS - 推荐)",
             "Hailo-8 (高性能标准版 26 TOPS)"
         ])
-        self.combo.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.combo, """
             QComboBox {
                 background: #ffffff;
                 border: 1px solid #d1d5db;
@@ -544,7 +545,7 @@ class BaseExportDialog(QDialog):
         # Card container with shadow
         card = QFrame()
         card.setObjectName("ExportModalCard")
-        card.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(card, """
             QFrame#ExportModalCard {
                 background: #ffffff;
                 border: 1px solid #e5e7eb;
@@ -569,14 +570,14 @@ class BaseExportDialog(QDialog):
         title_text = f"导出至 {self.spec.get('name', self.format_key.upper())}"
         lbl_title = QLabel(title_text)
         lbl_title.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
-        lbl_title.setStyleSheet("color: #111827; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(lbl_title, "color: #111827; background: transparent;")
         header_row.addWidget(lbl_title)
         header_row.addStretch()
 
         btn_close = QPushButton()
         btn_close.setIcon(PhX.regular(size=14, color="#9ca3af"))
         btn_close.setFixedSize(24, 24)
-        btn_close.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(btn_close, """
             QPushButton {
                 background: transparent;
                 border: none;
@@ -597,7 +598,7 @@ class BaseExportDialog(QDialog):
         sub_row.setContentsMargins(0, 0, 0, 14)
         lbl_sub = QLabel(f"配置 {self.spec.get('name', '')} 格式的导出参数。")
         lbl_sub.setFont(QFont("Segoe UI", 10))
-        lbl_sub.setStyleSheet("color: #6b7280; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(lbl_sub, "color: #6b7280; background: transparent;")
         sub_row.addWidget(lbl_sub)
 
         link_url = self.spec.get("doc_url", "")
@@ -605,7 +606,7 @@ class BaseExportDialog(QDialog):
             lbl_link = QLabel('<a href="' + link_url + '" style="color: #2563eb; text-decoration: none;">了解更多 ↗</a>')
             lbl_link.setFont(QFont("Segoe UI", 10))
             lbl_link.setOpenExternalLinks(True)
-            lbl_link.setStyleSheet("background: transparent;")
+            _MkThemeEngine.apply_style_sheet(lbl_link, "background: transparent;")
             sub_row.addWidget(lbl_link)
         sub_row.addStretch()
         card_layout.addLayout(sub_row)
@@ -614,7 +615,7 @@ class BaseExportDialog(QDialog):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(scroll, """
             QScrollArea { background: transparent; border: none; }
             QScrollBar:vertical {
                 width: 6px;
@@ -630,7 +631,7 @@ class BaseExportDialog(QDialog):
         """)
 
         form_widget = QWidget()
-        form_widget.setStyleSheet("background: transparent;")
+        _MkThemeEngine.apply_style_sheet(form_widget, "background: transparent;")
         form_layout = QVBoxLayout(form_widget)
         form_layout.setContentsMargins(0, 0, 8, 0)
         form_layout.setSpacing(6)
@@ -666,7 +667,7 @@ class BaseExportDialog(QDialog):
         # Status text (for validation/error messages)
         self.lbl_status = QLabel("")
         self.lbl_status.setFont(QFont("Segoe UI", 9))
-        self.lbl_status.setStyleSheet("color: #dc2626; margin-top: 4px; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_status, "color: #dc2626; margin-top: 4px; background: transparent;")
         self.lbl_status.hide()
         card_layout.addWidget(self.lbl_status)
 
@@ -678,7 +679,7 @@ class BaseExportDialog(QDialog):
 
         self.btn_cancel = QPushButton("取消")
         self.btn_cancel.setFont(QFont("Segoe UI", 10, QFont.Weight.Medium))
-        self.btn_cancel.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.btn_cancel, """
             QPushButton {
                 background: #ffffff;
                 border: 1px solid #d1d5db;
@@ -694,7 +695,7 @@ class BaseExportDialog(QDialog):
 
         self.btn_start = QPushButton("开始导出")
         self.btn_start.setFont(QFont("Segoe UI", 10, QFont.Weight.DemiBold))
-        self.btn_start.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.btn_start, """
             QPushButton {
                 background: #111827;
                 border: none;
@@ -868,7 +869,7 @@ class ExportHistoryItem(QFrame):
 
         self.lbl_check = QLabel()
         self.lbl_check.setPixmap(PhCheckCircle.fill(color="#16a34a", size=18).pixmap(18, 18))
-        self.lbl_check.setStyleSheet("background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_check, "background: transparent; border: none;")
         self.lbl_check.setFixedSize(18, 18)
         layout.addWidget(self.lbl_check)
 
@@ -928,7 +929,7 @@ class ExportHistoryItem(QFrame):
     def set_theme(self, is_dark: bool):
         self.is_dark = is_dark
         hover_bg = "#27272a" if is_dark else "#f9fafb"
-        self.setStyleSheet(f"""
+        _MkThemeEngine.apply_style_sheet(self, f"""
             #ExportHistoryItem {{
                 background: transparent;
                 border: none;
@@ -944,32 +945,32 @@ class ExportHistoryItem(QFrame):
         """)
         summary_color = "#f1f5f9" if is_dark else "#1f2937"
         meta_color = "#9ca3af" if is_dark else "#6b7280"
-        self.lbl_summary.setStyleSheet(f"color: {summary_color}; background: transparent; border: none;")
-        self.lbl_meta.setStyleSheet(f"color: {meta_color}; background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_summary, f"color: {summary_color}; background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_meta, f"color: {meta_color}; background: transparent; border: none;")
 
         btn_hover = "#3f3f46" if is_dark else "#e5e7eb"
         icon_color = "#d4d4d8" if is_dark else "#4b5563"
         self.btn_folder.setIcon(PhFolder.regular(color=icon_color, size=15))
-        self.btn_folder.setStyleSheet(f"""
+        _MkThemeEngine.apply_style_sheet(self.btn_folder, f"""
             QPushButton {{ background: transparent; border: none; padding: 5px; border-radius: 4px; }}
             QPushButton:hover {{ background: {btn_hover}; }}
         """)
         self.btn_down.setIcon(PhDownloadSimple.regular(color=icon_color, size=15))
-        self.btn_down.setStyleSheet(f"""
+        _MkThemeEngine.apply_style_sheet(self.btn_down, f"""
             QPushButton {{ background: transparent; border: none; padding: 5px; border-radius: 4px; }}
             QPushButton:hover {{ background: {btn_hover}; }}
         """)
         del_hover = "#450a0a" if is_dark else "#fee2e2"
         del_color = "#f87171" if is_dark else "#9ca3af"
         self.btn_del.setIcon(PhTrash.regular(color=del_color, size=15))
-        self.btn_del.setStyleSheet(f"""
+        _MkThemeEngine.apply_style_sheet(self.btn_del, f"""
             QPushButton {{ background: transparent; border: none; padding: 5px; border-radius: 4px; }}
             QPushButton:hover {{ background: {del_hover}; }}
         """)
         cancel_border = "#7f1d1d" if is_dark else "#fee2e2"
         cancel_hover = "#450a0a" if is_dark else "#fef2f2"
         self.btn_cancel.setIcon(PhTrash.regular(color="#ef4444", size=16))
-        self.btn_cancel.setStyleSheet(f"""
+        _MkThemeEngine.apply_style_sheet(self.btn_cancel, f"""
             QPushButton {{
                 background: transparent;
                 border: 1px solid {cancel_border};
@@ -1058,7 +1059,7 @@ class ExportFormatCard(QFrame):
         self._init_header()
         self._init_expand_container()
         self.set_theme(self.is_dark)
-        ThemeEngine.instance().themeChanged.connect(lambda: self.set_theme(ThemeEngine.is_dark()))
+        # The containing experiment page owns theme propagation for these cards.
 
     def _init_header(self):
         header_row = QHBoxLayout()
@@ -1070,7 +1071,7 @@ class ExportFormatCard(QFrame):
         self.btn_toggle.setIcon(PhCaretRight.bold(color="#6b7280", size=14))
         self.btn_toggle.setFixedSize(22, 22)
         self.btn_toggle.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_toggle.setStyleSheet("QPushButton { background: transparent; border: none; }")
+        _MkThemeEngine.apply_style_sheet(self.btn_toggle, "QPushButton { background: transparent; border: none; }")
         self.btn_toggle.clicked.connect(self.toggle_expand)
         header_row.addWidget(self.btn_toggle)
 
@@ -1110,7 +1111,7 @@ class ExportFormatCard(QFrame):
             self.lbl_extra.setFont(QFont("Segoe UI", 8, QFont.Weight.DemiBold))
             b_col = self.spec.get("badge_color", "#2563eb")
             b_bg = self.spec.get("badge_bg", "#eff6ff")
-            self.lbl_extra.setStyleSheet(f"background: {b_bg}; color: {b_col}; border-radius: 4px; padding: 1px 5px; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_extra, f"background: {b_bg}; color: {b_col}; border-radius: 4px; padding: 1px 5px; border: none;")
             top_line.addWidget(self.lbl_extra)
         else:
             self.lbl_extra = None
@@ -1120,7 +1121,7 @@ class ExportFormatCard(QFrame):
             link_lbl = QLabel('<a href="' + link_url + '" style="color: #9ca3af; text-decoration: none;">↗</a>')
             link_lbl.setFont(QFont("Segoe UI", 11))
             link_lbl.setOpenExternalLinks(True)
-            link_lbl.setStyleSheet("background: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(link_lbl, "background: transparent; border: none;")
             top_line.addWidget(link_lbl)
 
         top_line.addStretch()
@@ -1134,7 +1135,7 @@ class ExportFormatCard(QFrame):
 
         # Dynamic Starting Badge (Matching Fig 1)
         self.badge_starting = QFrame()
-        self.badge_starting.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.badge_starting, """
             QFrame {
                 background: #eff6ff;
                 border: 1px solid #dbeafe;
@@ -1150,7 +1151,7 @@ class ExportFormatCard(QFrame):
 
         self.lbl_starting_text = QLabel("正在导出")
         self.lbl_starting_text.setFont(QFont("Segoe UI", 9, QFont.Weight.DemiBold))
-        self.lbl_starting_text.setStyleSheet("color: #2563eb; background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_starting_text, "color: #2563eb; background: transparent; border: none;")
         badge_lay.addWidget(self.lbl_starting_text)
 
         self.badge_starting.hide()
@@ -1173,7 +1174,7 @@ class ExportFormatCard(QFrame):
         self.is_dark = is_dark
         card_bg = "#18181b" if is_dark else "#ffffff"
         card_border = "#27272a" if is_dark else "#e5e7eb"
-        self.setStyleSheet(f"""
+        _MkThemeEngine.apply_style_sheet(self, f"""
             QFrame#FormatCard {{
                 background: {card_bg};
                 border: 1px solid {card_border};
@@ -1181,21 +1182,21 @@ class ExportFormatCard(QFrame):
             }}
         """)
         name_color = "#f1f5f9" if is_dark else "#111827"
-        self.lbl_name.setStyleSheet(f"color: {name_color}; background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_name, f"color: {name_color}; background: transparent; border: none;")
 
         tag_bg = "#27272a" if is_dark else "#f3f4f6"
         tag_color = "#a1a1aa" if is_dark else "#4b5563"
-        self.lbl_tag.setStyleSheet(f"""
+        _MkThemeEngine.apply_style_sheet(self.lbl_tag, f"""
             background: {tag_bg}; color: {tag_color};
             border-radius: 4px; padding: 1px 6px; border: none;
         """)
 
         desc_color = "#a1a1aa" if is_dark else "#6b7280"
-        self.lbl_desc.setStyleSheet(f"color: {desc_color}; background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_desc, f"color: {desc_color}; background: transparent; border: none;")
 
         count_bg = "#27272a" if is_dark else "#f3f4f6"
         count_color = "#d4d4d8" if is_dark else "#374151"
-        self.lbl_count.setStyleSheet(f"""
+        _MkThemeEngine.apply_style_sheet(self.lbl_count, f"""
             background: {count_bg}; color: {count_color};
             border-radius: 12px; padding: 3px 10px; border: none;
         """)
@@ -1215,7 +1216,7 @@ class ExportFormatCard(QFrame):
 
     def _init_expand_container(self):
         self.records_container = QWidget()
-        self.records_container.setStyleSheet("background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(self.records_container, "background: transparent; border: none;")
         self.records_layout = QVBoxLayout(self.records_container)
         self.records_layout.setContentsMargins(34, 4, 0, 0)
         self.records_layout.setSpacing(4)

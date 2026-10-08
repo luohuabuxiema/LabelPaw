@@ -2,6 +2,7 @@
 """
 Project Management View for AI Vision Training Platform
 """
+from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                QTableWidget, QTableWidgetItem, QHeaderView,
                                QDialog, QMessageBox)
@@ -15,7 +16,7 @@ class NewProjectDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("新建训练项目")
         self.resize(420, 300)
-        self.setStyleSheet("background-color: white;")
+        _MkThemeEngine.apply_style_sheet(self, "background-color: white;")
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
@@ -41,7 +42,7 @@ class NewProjectDialog(QDialog):
         btn_layout.addWidget(self.btn_cancel)
 
         self.btn_submit = MkButton("创建项目")
-        self.btn_submit.setStyleSheet("background-color: #409eff; color: white; border: none;")
+        _MkThemeEngine.apply_style_sheet(self.btn_submit, "background-color: #409eff; color: white; border: none;")
         self.btn_submit.clicked.connect(self.accept)
         btn_layout.addWidget(self.btn_submit)
 
@@ -77,7 +78,7 @@ class ProjectView(MkQWidget):
         # Header Bar
         hdr_layout = QHBoxLayout()
         title_lbl = QLabel("训练项目管理 Project Management")
-        title_lbl.setStyleSheet("font-size: 20px; font-weight: bold; color: #303133;")
+        _MkThemeEngine.apply_style_sheet(title_lbl, "font-size: 20px; font-weight: bold; color: #303133;")
         hdr_layout.addWidget(title_lbl)
         hdr_layout.addStretch()
 
@@ -99,7 +100,7 @@ class ProjectView(MkQWidget):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.verticalHeader().setVisible(False)
         self.table.setShowGrid(False)
-        self.table.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.table, """
             QTableWidget { background: white; border: 1px solid #e2e8f0; border-radius: 6px; }
             QHeaderView::section { background: #f8fafc; font-weight: bold; color: #475569; border: none; border-bottom: 1px solid #e2e8f0; height: 34px; }
             QTableWidget::item { border-bottom: 1px solid #f1f5f9; padding: 8px; }
@@ -125,7 +126,7 @@ class ProjectView(MkQWidget):
 
             # Action button container
             btn_del = MkButton("删除")
-            btn_del.setStyleSheet("background-color: #fef0f0; color: #f56c6c; border: 1px solid #fde2e2;")
+            _MkThemeEngine.apply_style_sheet(btn_del, "background-color: #fef0f0; color: #f56c6c; border: 1px solid #fde2e2;")
             btn_del.clicked.connect(lambda _, pid=p["id"]: self.delete_project(pid))
             self.table.setCellWidget(row, 4, btn_del)
 

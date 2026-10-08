@@ -3,6 +3,7 @@
 New Project Creation Dialog for AI Vision Platform
 Using MonkeyQt MkForm (top-aligned labels), MkInput, MkComboBox, MkButton, MkMessage
 """
+from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
                                QWidget, QMessageBox, QFrame, QPushButton,
                                QGraphicsDropShadowEffect)
@@ -23,7 +24,7 @@ class ProjectCreateDialog(QDialog):
         # Frameless modern modal window
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Dialog)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.setStyleSheet("QDialog { background: transparent; background-color: transparent; border: none; }")
+        _MkThemeEngine.apply_style_sheet(self, "QDialog { background: transparent; background-color: transparent; border: none; }")
         self.setMinimumWidth(500)
         self.resize(540, 420)
 
@@ -52,18 +53,18 @@ class ProjectCreateDialog(QDialog):
 
         # 1. Dialog Header with Close Button (X)
         self.header_widget = QWidget()
-        self.header_widget.setStyleSheet("background: transparent; background-color: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(self.header_widget, "background: transparent; background-color: transparent; border: none;")
         header_layout = QHBoxLayout(self.header_widget)
         header_layout.setContentsMargins(0, 0, 0, 0)
         header_layout.setSpacing(10)
 
         icon_lbl = QLabel()
         icon_lbl.setPixmap(PhFolderPlus.regular(size=22, color="#3b82f6").pixmap(22, 22))
-        icon_lbl.setStyleSheet("background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(icon_lbl, "background: transparent; border: none;")
         header_layout.addWidget(icon_lbl)
 
         self.title_lbl = QLabel("新建视觉训练项目 (New Project)")
-        self.title_lbl.setStyleSheet("background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(self.title_lbl, "background: transparent; border: none;")
         header_layout.addWidget(self.title_lbl)
         header_layout.addStretch()
 
@@ -77,7 +78,7 @@ class ProjectCreateDialog(QDialog):
         main_layout.addWidget(self.header_widget)
 
         self.subtitle_lbl = QLabel("项目是管理模型实验、训练轮次及评估看板的统一容器。")
-        self.subtitle_lbl.setStyleSheet("background: transparent; background-color: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(self.subtitle_lbl, "background: transparent; background-color: transparent; border: none;")
         main_layout.addWidget(self.subtitle_lbl)
 
         # 2. Form with top-aligned labels (Ultralytics modern style)
@@ -181,7 +182,7 @@ class ProjectCreateDialog(QDialog):
     def apply_theme(self, *args):
         is_dark = ThemeEngine.is_dark()
         if is_dark:
-            self.container_card.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.container_card, """
                 QFrame#DialogContainer {
                     background-color: #1e1e20;
                     border: 1px solid #303036;
@@ -192,11 +193,11 @@ class ProjectCreateDialog(QDialog):
                     background: transparent;
                 }
             """)
-            self.header_widget.setStyleSheet("background: transparent; background-color: transparent; border: none;")
-            self.title_lbl.setStyleSheet("font-size: 18px; font-weight: bold; color: #f4f4f5; background: transparent; border: none;")
-            self.subtitle_lbl.setStyleSheet("color: #a1a1aa; font-size: 13px; margin-top: -6px; background: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.header_widget, "background: transparent; background-color: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.title_lbl, "font-size: 18px; font-weight: bold; color: #f4f4f5; background: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.subtitle_lbl, "color: #a1a1aa; font-size: 13px; margin-top: -6px; background: transparent; border: none;")
             self.btn_close.setIcon(PhX.bold(size=14, color="#a1a1aa"))
-            self.btn_close.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.btn_close, """
                 QPushButton {
                     border: none;
                     background-color: transparent;
@@ -207,7 +208,7 @@ class ProjectCreateDialog(QDialog):
                 }
             """)
         else:
-            self.container_card.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.container_card, """
                 QFrame#DialogContainer {
                     background-color: #ffffff;
                     border: 1px solid #e2e8f0;
@@ -218,11 +219,11 @@ class ProjectCreateDialog(QDialog):
                     background: transparent;
                 }
             """)
-            self.header_widget.setStyleSheet("background: transparent; background-color: transparent; border: none;")
-            self.title_lbl.setStyleSheet("font-size: 18px; font-weight: bold; color: #0f172a; background: transparent; border: none;")
-            self.subtitle_lbl.setStyleSheet("color: #64748b; font-size: 13px; margin-top: -6px; background: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.header_widget, "background: transparent; background-color: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.title_lbl, "font-size: 18px; font-weight: bold; color: #0f172a; background: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.subtitle_lbl, "color: #64748b; font-size: 13px; margin-top: -6px; background: transparent; border: none;")
             self.btn_close.setIcon(PhX.bold(size=14, color="#64748b"))
-            self.btn_close.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.btn_close, """
                 QPushButton {
                     border: none;
                     background-color: transparent;

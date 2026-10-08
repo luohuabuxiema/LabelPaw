@@ -13,15 +13,15 @@ if WORKSPACE_DIR not in sys.path:
     sys.path.insert(0, WORKSPACE_DIR)
 
 from PySide6.QtWidgets import QApplication
-from monkeyqt import apply_monkeyqt_theme, use_theme
+from monkeyqt import ThemeEngine, use_theme
 from TrainingPlatform.ui.main_window import MainWindow
 
 def main():
     app = QApplication(sys.argv)
+    ThemeEngine.enable_palette_theme()
     use_theme("默认")
     
     window = MainWindow()
-    apply_monkeyqt_theme(window)
     window.showMaximized()
 
     sys.exit(app.exec())

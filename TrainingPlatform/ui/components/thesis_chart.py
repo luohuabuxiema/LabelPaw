@@ -13,6 +13,7 @@ Strictly benchmarked against Master's thesis / publication figures and modern fr
   - Modern floating tooltip bubble with shadow and rich text (x: 145, ● yolo26n: 0.639)
 - Fullscreen expand modal with zoom/pan and 300 DPI high-res export
 """
+from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 import os
 from typing import Dict, List, Optional, Tuple
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
@@ -72,7 +73,7 @@ class ChartHoverTooltip(QFrame):
     def set_theme(self, is_dark: bool):
         bg = "#1e1e2e" if is_dark else "#ffffff"
         border = "#313244" if is_dark else "#e2e8f0"
-        self.setStyleSheet(f"""
+        _MkThemeEngine.apply_style_sheet(self, f"""
             QFrame#ChartHoverTooltip {{
                 background-color: {bg};
                 border: 1px solid {border};
@@ -89,6 +90,9 @@ class ThesisChartCanvas(FigureCanvas):
     """Matplotlib canvas styled strictly according to master's thesis standards (Image 2) with interactive hover effects (Image 3)."""
 
     def __init__(self, title: str = "", y_label: str = "", is_dark: bool = False, parent=None):
+        self._theme_frames = {}
+        self._theme_frame = None
+        self._theme_redraw_pending = False
         self.is_dark = is_dark
         self.plot_title = title
         self.y_label_text = y_label
@@ -105,7 +109,7 @@ class ThesisChartCanvas(FigureCanvas):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setMinimumHeight(160)
         self.setMouseTracking(True)
-        self.setStyleSheet(f"background-color: {self.bg_color};")
+        _MkThemeEngine.apply_style_sheet(self, f"background-color: {self.bg_color};")
 
         self.ax = self.fig.add_subplot(111)
         self._apply_thesis_style()
@@ -213,13 +217,48 @@ class ThesisChartCanvas(FigureCanvas):
         try:
             # Completely fill canvas background to prevent ghost trails during moving / resizing
             painter.fillRect(self.rect(), QColor(self.bg_color))
-            buf = self.buffer_rgba()
-            qimage = QImage(buf, buf.shape[1], buf.shape[0], QImage.Format.Format_RGBA8888)
-            qimage.setDevicePixelRatio(self.device_pixel_ratio)
+            qimage = self._theme_frame
+            if qimage is None:
+                buf = self.buffer_rgba()
+                qimage = QImage(buf, buf.shape[1], buf.shape[0], QImage.Format.Format_RGBA8888)
+                qimage.setDevicePixelRatio(self.device_pixel_ratio)
             painter.drawImage(QPoint(0, 0), qimage)
             self._draw_rect_callback(painter)
         finally:
             painter.end()
+
+    def _theme_frame_key(self):
+        return self.is_dark, self.width(), self.height(), self.device_pixel_ratio
+
+    def draw(self):
+        self._theme_frame = None
+        if not self._theme_redraw_pending:
+            self._theme_frames.clear()
+        self._theme_redraw_pending = False
+        super().draw()
+        # Own the pixels: Agg reuses its buffer on the next render. Keep at most
+        # one light and one dark frame, invalidated by data/layout/hover updates.
+        buf = self.buffer_rgba()
+        frame = QImage(buf, buf.shape[1], buf.shape[0], QImage.Format.Format_RGBA8888).copy()
+        frame.setDevicePixelRatio(self.device_pixel_ratio)
+        key = self._theme_frame_key()
+        self._theme_frames = {k: v for k, v in self._theme_frames.items() if k[1:] == key[1:]}
+        self._theme_frames[key] = frame
+
+    def draw_idle(self):
+        # All non-theme changes must discard both snapshots to avoid stale data.
+        self._theme_frames.clear()
+        self._theme_frame = None
+        self._theme_redraw_pending = False
+        super().draw_idle()
+
+    def _draw_theme(self):
+        self._theme_frame = self._theme_frames.get(self._theme_frame_key())
+        if self._theme_frame is not None and not self._draw_pending:
+            self.update()
+        else:
+            self._theme_redraw_pending = True
+            super().draw_idle()
 
     def _apply_thesis_style(self):
         """Apply academic thesis despined formatting."""
@@ -261,6 +300,10 @@ class ThesisChartCanvas(FigureCanvas):
         self.ax.xaxis.label.set_color(self.muted_text)
         if self.y_label_text:
             self.ax.yaxis.label.set_color(self.muted_text)
+        for text in self.ax.texts:
+            text.set_color(self.muted_text)
+        if self.hover_vline is not None:
+            self.hover_vline.set_color(self.crosshair_color)
         for label in self.ax.get_xticklabels() + self.ax.get_yticklabels():
             label.set_color(self.muted_text)
         leg = self.ax.get_legend()
@@ -275,9 +318,12 @@ class ThesisChartCanvas(FigureCanvas):
         if getattr(self, "_pending_theme", None) is not None:
             self._pending_theme = None
             self._apply_thesis_colors()
-            self.draw_idle()
+            self._draw_theme()
 
     def set_theme(self, is_dark: bool):
+        if getattr(self, "_applied_dark_mode", None) == is_dark:
+            return
+        self._applied_dark_mode = is_dark
         self._update_color_scheme(is_dark)
         self.tooltip.set_theme(is_dark)
         if not self.isVisible():
@@ -285,12 +331,14 @@ class ThesisChartCanvas(FigureCanvas):
             return
         self._pending_theme = None
         self._apply_thesis_colors()
-        self.draw_idle()
+        self._draw_theme()
 
     def render_series(self, series_dict: Dict[str, Dict]):
         """
         Render multiple model series on the same axis with halo dot highlight capability.
         """
+        self._theme_frames.clear()
+        self._theme_frame = None
         self.series_data = series_dict or {}
         self.ax.clear()
         self._apply_thesis_style()
@@ -488,7 +536,7 @@ class FullscreenChartDialog(QDialog):
         bg = "#181825" if is_dark else "#ffffff"
         fg = "#cdd6f4" if is_dark else "#09090b"
         border = "#313244" if is_dark else "#e2e8f0"
-        self.setStyleSheet(f"background-color: {bg}; color: {fg};")
+        _MkThemeEngine.apply_style_sheet(self, f"background-color: {bg}; color: {fg};")
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 20, 24, 20)
@@ -511,7 +559,7 @@ class FullscreenChartDialog(QDialog):
         btn_export.setIcon(PhDownloadSimple.regular(size=15, color="#2563eb"))
         btn_export.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         btn_export.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_export.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(btn_export, """
             QToolButton {
                 border: 1px solid #bfdbfe;
                 border-radius: 6px;
@@ -530,7 +578,7 @@ class FullscreenChartDialog(QDialog):
         btn_close = QToolButton()
         btn_close.setIcon(PhX.regular(size=16, color="#64748b"))
         btn_close.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_close.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(btn_close, """
             QToolButton {
                 border: none;
                 border-radius: 6px;
@@ -639,7 +687,7 @@ class ThesisChartCard(MkQWidget):
     def _apply_card_style(self):
         if hasattr(self, "lbl_title"):
             fg = "#cdd6f4" if self.is_dark else "#0f172a"
-            self.lbl_title.setStyleSheet(f"color: {fg}; background: transparent;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_title, f"color: {fg}; background: transparent;")
 
 
     def _update_toolbutton_styles(self):
@@ -658,15 +706,15 @@ class ThesisChartCard(MkQWidget):
                 border-color: #cbd5e1;
             }}
         """
-        self.btn_fullscreen.setStyleSheet(btn_qss)
-        self.btn_more.setStyleSheet(btn_qss)
+        _MkThemeEngine.apply_style_sheet(self.btn_fullscreen, btn_qss)
+        _MkThemeEngine.apply_style_sheet(self.btn_more, btn_qss)
         icon_color = "#94a3b8" if self.is_dark else "#64748b"
         self.btn_fullscreen.setIcon(PhArrowsOutSimple.regular(size=14, color=icon_color))
         self.btn_more.setIcon(PhDotsThree.bold(size=16, color=icon_color))
 
     def _show_more_menu(self):
         menu = QMenu(self)
-        menu.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(menu, """
             QMenu {
                 background-color: #ffffff;
                 border: 1px solid #e2e8f0;
@@ -711,6 +759,9 @@ class ThesisChartCard(MkQWidget):
         QApplication.clipboard().setText("\n".join(lines))
 
     def set_theme(self, is_dark: bool):
+        if getattr(self, "_applied_dark_mode", None) == is_dark:
+            return
+        self._applied_dark_mode = is_dark
         self.is_dark = is_dark
         self._apply_card_style()
         self._update_toolbutton_styles()

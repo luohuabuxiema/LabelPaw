@@ -17,6 +17,7 @@ Styled strictly benchmarked against Ultralytics "Train New Model" Dialog:
 - Sleek 6px floating scrollbar with zero arrow buttons (no native Windows scrollbar)
 - Bottom action buttons (取消 / 开始训练)
 """
+from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 import os
 import yaml
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, 
@@ -400,7 +401,7 @@ class YamlCodeEditor(QFrame):
         self._is_dark = is_dark
         self.highlighter.set_dark(is_dark)
         if is_dark:
-            self.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self, """
                 QFrame#YamlCodeEditorCard {
                     background-color: #141416;
                     border: 1px solid #27272a;
@@ -448,7 +449,7 @@ class YamlCodeEditor(QFrame):
                     height: 0px;
                 }
             """)
-            self.btn_copy.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.btn_copy, """
                 QToolButton {
                     background-color: #27272a;
                     border: 1px solid #3f3f46;
@@ -461,7 +462,7 @@ class YamlCodeEditor(QFrame):
             """)
             self.btn_copy.setIcon(PhCopy.regular(size=13, color="#a1a1aa"))
         else:
-            self.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self, """
                 QFrame#YamlCodeEditorCard {
                     background-color: #f8fafc;
                     border: 1px solid #e2e8f0;
@@ -509,7 +510,7 @@ class YamlCodeEditor(QFrame):
                     height: 0px;
                 }
             """)
-            self.btn_copy.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.btn_copy, """
                 QToolButton {
                     background-color: #ffffff;
                     border: 1px solid #e2e8f0;
@@ -691,14 +692,14 @@ class CliCommandViewer(QFrame):
         if hasattr(self, "highlighter") and self.highlighter:
             self.highlighter.set_dark(is_dark)
         if is_dark:
-            self.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self, """
                 QFrame#CliCommandViewerCard {
                     background-color: #0c0c0e;
                     border: 1px solid #27272a;
                     border-radius: 8px;
                 }
             """)
-            self.editor.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.editor, """
                 QPlainTextEdit {
                     background-color: transparent;
                     color: #e2e8f0;
@@ -728,7 +729,7 @@ class CliCommandViewer(QFrame):
                     height: 0px;
                 }
             """)
-            self.btn_copy.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.btn_copy, """
                 QToolButton {
                     border: 1px solid #3f3f46;
                     background-color: #1e1e20;
@@ -741,14 +742,14 @@ class CliCommandViewer(QFrame):
             """)
             self.btn_copy.setIcon(PhCopy.regular(size=13, color="#a1a1aa"))
         else:
-            self.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self, """
                 QFrame#CliCommandViewerCard {
                     background-color: #ffffff;
                     border: 1px solid #e2e8f0;
                     border-radius: 8px;
                 }
             """)
-            self.editor.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.editor, """
                 QPlainTextEdit {
                     background-color: transparent;
                     color: #0f172a;
@@ -778,7 +779,7 @@ class CliCommandViewer(QFrame):
                     height: 0px;
                 }
             """)
-            self.btn_copy.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.btn_copy, """
                 QToolButton {
                     border: 1px solid #e2e8f0;
                     background-color: #f8fafc;
@@ -994,7 +995,7 @@ class ModelRowItem(QFrame):
         lay.addStretch()
 
         self.lbl_meta = QLabel(self.model_info["meta"])
-        self.lbl_meta.setStyleSheet("font-size: 11px; color: #94a3b8;" if self.is_dark else "font-size: 11px; color: #64748b;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_meta, "font-size: 11px; color: #94a3b8;" if self.is_dark else "font-size: 11px; color: #64748b;")
         lay.addWidget(self.lbl_meta)
 
         self._apply_style()
@@ -1009,8 +1010,8 @@ class ModelRowItem(QFrame):
             text_color = "#0f172a"
             hover_bg = "#f1f5f9"
 
-        self.lbl_name.setStyleSheet(f"color: {text_color}; background: transparent; border: none;")
-        self.setStyleSheet(f"""
+        _MkThemeEngine.apply_style_sheet(self.lbl_name, f"color: {text_color}; background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(self, f"""
             QFrame {{
                 background-color: {bg};
                 border-radius: 6px;
@@ -1080,7 +1081,7 @@ class ModelPickerPopup(QWidget):
         self.left_lay.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         lbl_series = QLabel("系列 (Series)")
-        lbl_series.setStyleSheet("font-size: 11px; font-weight: 600; color: #94a3b8; padding-left: 4px;" if self.is_dark else "font-size: 11px; font-weight: 600; color: #64748b; padding-left: 4px;")
+        _MkThemeEngine.apply_style_sheet(lbl_series, "font-size: 11px; font-weight: 600; color: #94a3b8; padding-left: 4px;" if self.is_dark else "font-size: 11px; font-weight: 600; color: #64748b; padding-left: 4px;")
         self.left_lay.addWidget(lbl_series)
 
         self.series_btns = {}
@@ -1094,16 +1095,16 @@ class ModelPickerPopup(QWidget):
 
             ic = QLabel()
             ic.setPixmap(get_series_icon(s_name, 16))
-            ic.setStyleSheet("background: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(ic, "background: transparent; border: none;")
             b_lay.addWidget(ic)
 
             txt = QLabel(s_name)
-            txt.setStyleSheet("font-size: 12px; font-weight: 600; background: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(txt, "font-size: 12px; font-weight: 600; background: transparent; border: none;")
             b_lay.addWidget(txt)
             b_lay.addStretch()
 
             count = QLabel("5")
-            count.setStyleSheet("font-size: 11px; color: #94a3b8; background: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(count, "font-size: 11px; color: #94a3b8; background: transparent; border: none;")
             b_lay.addWidget(count)
 
             btn.clicked.connect(lambda checked=False, s=s_name: self._select_series(s))
@@ -1144,18 +1145,18 @@ class ModelPickerPopup(QWidget):
             is_active = (s_name == self.active_series)
             if self.is_dark:
                 if is_active:
-                    btn.setStyleSheet("QPushButton { background-color: #27272a; border: 1px solid #3f3f46; border-radius: 6px; }")
-                    txt.setStyleSheet("font-size: 12px; font-weight: 700; color: #ffffff; background: transparent; border: none;")
+                    _MkThemeEngine.apply_style_sheet(btn, "QPushButton { background-color: #27272a; border: 1px solid #3f3f46; border-radius: 6px; }")
+                    _MkThemeEngine.apply_style_sheet(txt, "font-size: 12px; font-weight: 700; color: #ffffff; background: transparent; border: none;")
                 else:
-                    btn.setStyleSheet("QPushButton { background-color: transparent; border: none; border-radius: 6px; } QPushButton:hover { background-color: #1f1f23; }")
-                    txt.setStyleSheet("font-size: 12px; font-weight: 500; color: #a1a1aa; background: transparent; border: none;")
+                    _MkThemeEngine.apply_style_sheet(btn, "QPushButton { background-color: transparent; border: none; border-radius: 6px; } QPushButton:hover { background-color: #1f1f23; }")
+                    _MkThemeEngine.apply_style_sheet(txt, "font-size: 12px; font-weight: 500; color: #a1a1aa; background: transparent; border: none;")
             else:
                 if is_active:
-                    btn.setStyleSheet("QPushButton { background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; }")
-                    txt.setStyleSheet("font-size: 12px; font-weight: 700; color: #0f172a; background: transparent; border: none;")
+                    _MkThemeEngine.apply_style_sheet(btn, "QPushButton { background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; }")
+                    _MkThemeEngine.apply_style_sheet(txt, "font-size: 12px; font-weight: 700; color: #0f172a; background: transparent; border: none;")
                 else:
-                    btn.setStyleSheet("QPushButton { background-color: transparent; border: none; border-radius: 6px; } QPushButton:hover { background-color: #f1f5f9; }")
-                    txt.setStyleSheet("font-size: 12px; font-weight: 500; color: #64748b; background: transparent; border: none;")
+                    _MkThemeEngine.apply_style_sheet(btn, "QPushButton { background-color: transparent; border: none; border-radius: 6px; } QPushButton:hover { background-color: #f1f5f9; }")
+                    _MkThemeEngine.apply_style_sheet(txt, "font-size: 12px; font-weight: 500; color: #64748b; background: transparent; border: none;")
 
     def _refresh_models_list(self):
         while self.models_lay.count():
@@ -1213,42 +1214,42 @@ class ModelPickerPopup(QWidget):
             self.shadow.setColor(QColor(0, 0, 0, 40) if not is_dark else QColor(0, 0, 0, 95))
 
         if is_dark:
-            self.setStyleSheet("QWidget#ModelPickerPopupContainer { background: transparent; border: none; }")
-            self.card.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self, "QWidget#ModelPickerPopupContainer { background: transparent; border: none; }")
+            _MkThemeEngine.apply_style_sheet(self.card, """
                 QFrame#ModelPickerCard {
                     background-color: #141416;
                     border: 1px solid #3f3f46;
                     border-radius: 12px;
                 }
             """)
-            self.col_left.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.col_left, """
                 background-color: #111113;
                 border: none;
                 border-right: 1px solid #27272a;
                 border-top-left-radius: 12px;
                 border-bottom-left-radius: 12px;
             """)
-            self.col_right.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.col_right, """
                 background-color: transparent;
                 border: none;
             """)
         else:
-            self.setStyleSheet("QWidget#ModelPickerPopupContainer { background: transparent; border: none; }")
-            self.card.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self, "QWidget#ModelPickerPopupContainer { background: transparent; border: none; }")
+            _MkThemeEngine.apply_style_sheet(self.card, """
                 QFrame#ModelPickerCard {
                     background-color: #ffffff;
                     border: 1px solid #cbd5e1;
                     border-radius: 12px;
                 }
             """)
-            self.col_left.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.col_left, """
                 background-color: #f8fafc;
                 border: none;
                 border-right: 1px solid #e2e8f0;
                 border-top-left-radius: 12px;
                 border-bottom-left-radius: 12px;
             """)
-            self.col_right.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.col_right, """
                 background-color: transparent;
                 border: none;
             """)
@@ -1279,7 +1280,7 @@ class ModelPickerWidget(QFrame):
         lay.setSpacing(8)
 
         self.lbl_icon = QLabel()
-        self.lbl_icon.setStyleSheet("background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_icon, "background: transparent; border: none;")
         lay.addWidget(self.lbl_icon)
 
         self.lbl_text = QLabel()
@@ -1287,13 +1288,13 @@ class ModelPickerWidget(QFrame):
         font.setPointSize(10)
         font.setBold(True)
         self.lbl_text.setFont(font)
-        self.lbl_text.setStyleSheet("background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_text, "background: transparent; border: none;")
         lay.addWidget(self.lbl_text)
 
         lay.addStretch()
 
         self.lbl_caret = QLabel()
-        self.lbl_caret.setStyleSheet("background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_caret, "background: transparent; border: none;")
         lay.addWidget(self.lbl_caret)
 
         self._update_display()
@@ -1351,7 +1352,7 @@ class ModelPickerWidget(QFrame):
     def apply_theme(self, is_dark: bool):
         self._is_dark = is_dark
         if is_dark:
-            self.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self, """
                 QFrame#ModelPickerCard {
                     background-color: #141416;
                     border: 1px solid #27272a;
@@ -1362,10 +1363,10 @@ class ModelPickerWidget(QFrame):
                     background-color: #1a1a1e;
                 }
             """)
-            self.lbl_text.setStyleSheet("color: #f4f4f5; background: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_text, "color: #f4f4f5; background: transparent; border: none;")
             self.lbl_caret.setPixmap(PhCaretDown.pixmap(size=14, color="#a1a1aa", weight="bold", dpr=2.0))
         else:
-            self.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self, """
                 QFrame#ModelPickerCard {
                     background-color: #ffffff;
                     border: 1px solid #e2e8f0;
@@ -1376,7 +1377,7 @@ class ModelPickerWidget(QFrame):
                     background-color: #f8fafc;
                 }
             """)
-            self.lbl_text.setStyleSheet("color: #0f172a; background: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_text, "color: #0f172a; background: transparent; border: none;")
             self.lbl_caret.setPixmap(PhCaretDown.pixmap(size=14, color="#64748b", weight="bold", dpr=2.0))
 
         if self._popup:
@@ -1477,7 +1478,7 @@ class InfoTooltipPopover(QWidget):
 
         font_family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif'
         if is_dark_theme:
-            self.label.setStyleSheet(f"""
+            _MkThemeEngine.apply_style_sheet(self.label, f"""
                 QLabel {{
                     color: #09090b;
                     font-family: {font_family};
@@ -1489,7 +1490,7 @@ class InfoTooltipPopover(QWidget):
             """)
             self.shadow.setColor(QColor(0, 0, 0, 90))
         else:
-            self.label.setStyleSheet(f"""
+            _MkThemeEngine.apply_style_sheet(self.label, f"""
                 QLabel {{
                     color: #ffffff;
                     font-family: {font_family};
@@ -1593,7 +1594,7 @@ class InfoIconButton(QLabel):
             color = "#09090b" if self._is_hovered else "#94a3b8"
             bg = "background-color: rgba(0, 0, 0, 0.06); border-radius: 10px;" if self._is_hovered else "background: transparent; border: none;"
 
-        self.setStyleSheet(f"QLabel {{ {bg} }}")
+        _MkThemeEngine.apply_style_sheet(self, f"QLabel {{ {bg} }}")
         self.setPixmap(PhInfo.pixmap(size=13, color=color, weight="regular", dpr=3.0))
 
     def enterEvent(self, event):
@@ -1653,7 +1654,7 @@ class AdvHeaderBar(QFrame):
     def apply_theme(self):
         is_dark = ThemeEngine.is_dark()
         if is_dark:
-            self.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self, """
                 QFrame#AdvHeaderBar {
                     background-color: transparent;
                     border: none;
@@ -1667,8 +1668,8 @@ class AdvHeaderBar(QFrame):
                 }
             """)
             self.icon_gear.setPixmap(PhGearSix.pixmap(size=16, color="#f4f4f5", weight="bold", dpr=3.0))
-            self.lbl_title.setStyleSheet("font-size: 13px; font-weight: 600; color: #f4f4f5;")
-            self.tag_status.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.lbl_title, "font-size: 13px; font-weight: 600; color: #f4f4f5;")
+            _MkThemeEngine.apply_style_sheet(self.tag_status, """
                 background-color: #27272a;
                 color: #a1a1aa;
                 font-size: 11px;
@@ -1678,7 +1679,7 @@ class AdvHeaderBar(QFrame):
             """)
             self._arrow_color = "#a1a1aa"
         else:
-            self.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self, """
                 QFrame#AdvHeaderBar {
                     background-color: transparent;
                     border: none;
@@ -1692,8 +1693,8 @@ class AdvHeaderBar(QFrame):
                 }
             """)
             self.icon_gear.setPixmap(PhGearSix.pixmap(size=16, color="#18181b", weight="bold", dpr=3.0))
-            self.lbl_title.setStyleSheet("font-size: 13px; font-weight: 600; color: #18181b;")
-            self.tag_status.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.lbl_title, "font-size: 13px; font-weight: 600; color: #18181b;")
+            _MkThemeEngine.apply_style_sheet(self.tag_status, """
                 background-color: #f4f4f5;
                 color: #71717a;
                 font-size: 11px;
@@ -1741,7 +1742,7 @@ class TrainCreateDialog(QDialog):
         # Frameless modern modal window (removes native OS titlebar)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Dialog)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.setStyleSheet("QDialog { background: transparent; background-color: transparent; border: none; }")
+        _MkThemeEngine.apply_style_sheet(self, "QDialog { background: transparent; background-color: transparent; border: none; }")
 
         self._is_closing = False
         self._is_showing_sub_dialog = False
@@ -1854,7 +1855,7 @@ class TrainCreateDialog(QDialog):
 
     def _create_field_header(self, text, hint=""):
         w = QWidget()
-        w.setStyleSheet("background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(w, "background: transparent; border: none;")
         l = QHBoxLayout(w)
         l.setContentsMargins(0, 0, 0, 0)
         l.setSpacing(4)
@@ -1870,7 +1871,7 @@ class TrainCreateDialog(QDialog):
 
     def _create_section_divider(self, title, action_widget=None):
         w = QWidget()
-        w.setStyleSheet("background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(w, "background: transparent; border: none;")
         lay = QHBoxLayout(w)
         lay.setContentsMargins(0, 12, 0, 4)
         lay.setSpacing(10)
@@ -1890,7 +1891,7 @@ class TrainCreateDialog(QDialog):
         box.setContentsMargins(0, 0, 0, 0)
         box.setSpacing(4)
         header = QWidget()
-        header.setStyleSheet("background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(header, "background: transparent; border: none;")
         h_lay = QHBoxLayout(header)
         h_lay.setContentsMargins(0, 0, 0, 0)
         h_lay.setSpacing(4)
@@ -1906,17 +1907,17 @@ class TrainCreateDialog(QDialog):
         
         inp = MkInput()
         inp.setText(str(default_val))
-        inp.setStyleSheet("font-size: 12px; padding: 4px 8px;")
+        _MkThemeEngine.apply_style_sheet(inp, "font-size: 12px; padding: 4px 8px;")
         box.addWidget(inp)
         
         container = QWidget()
-        container.setStyleSheet("background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(container, "background: transparent; border: none;")
         container.setLayout(box)
         return container, inp
 
     def _create_switch_field(self, label_text, default_checked=False, hint=""):
         w = QWidget()
-        w.setStyleSheet("background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(w, "background: transparent; border: none;")
         h = QHBoxLayout(w)
         h.setContentsMargins(0, 4, 4, 4)
         h.setSpacing(6)
@@ -1992,7 +1993,7 @@ class TrainCreateDialog(QDialog):
         # Dialog main container card with rounded corners & shadow
         self.container_card = QFrame(self)
         self.container_card.setObjectName("DialogContainer")
-        self.container_card.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.container_card, """
             QFrame#DialogContainer {
                 background-color: #ffffff;
                 border: 1px solid #e2e8f0;
@@ -2019,7 +2020,7 @@ class TrainCreateDialog(QDialog):
         # ── 1. Top Custom Header (Chinese First) ──
         self.header_widget = QWidget()
         self.header_widget.setObjectName("HeaderWidget")
-        self.header_widget.setStyleSheet("background: transparent; background-color: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(self.header_widget, "background: transparent; background-color: transparent; border: none;")
         header_layout = QHBoxLayout(self.header_widget)
         header_layout.setContentsMargins(0, 0, 0, 0)
         header_layout.setSpacing(8)
@@ -2029,7 +2030,7 @@ class TrainCreateDialog(QDialog):
 
         self.arrow_icon = QLabel()
         self.arrow_icon.setPixmap(PhArrowUpRight.pixmap(size=14, color="#2563eb", weight="bold", dpr=3.0))
-        self.arrow_icon.setStyleSheet("background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(self.arrow_icon, "background: transparent; border: none;")
         header_layout.addWidget(self.arrow_icon)
 
         tag_text = self.project.get('task_type', 'detect')
@@ -2053,7 +2054,7 @@ class TrainCreateDialog(QDialog):
         main_layout.addWidget(self.header_widget)
 
         self.subtitle_lbl = QLabel(f"在项目 [{self.project['name']}] 下配置并启动本地 YOLO 视觉模型训练。")
-        self.subtitle_lbl.setStyleSheet("background: transparent; background-color: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(self.subtitle_lbl, "background: transparent; background-color: transparent; border: none;")
         main_layout.addWidget(self.subtitle_lbl)
 
         # ── Scroll Area for Form Body (Clean floating scrollbar, zero Windows arrows) ──
@@ -2080,7 +2081,7 @@ class TrainCreateDialog(QDialog):
         col_model.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         lbl_model_header = QWidget()
-        lbl_model_header.setStyleSheet("background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(lbl_model_header, "background: transparent; border: none;")
         l_mh = QHBoxLayout(lbl_model_header)
         l_mh.setContentsMargins(0, 0, 0, 0)
         l_mh.setSpacing(6)
@@ -2101,10 +2102,10 @@ class TrainCreateDialog(QDialog):
         box_model_custom = QHBoxLayout()
         box_model_custom.setSpacing(6)
         self.input_custom_model = MkInput(placeholder="或指定本地自定义 .pt 权重路径...")
-        self.input_custom_model.setStyleSheet("font-size: 12px;")
+        _MkThemeEngine.apply_style_sheet(self.input_custom_model, "font-size: 12px;")
         btn_browse_model = MkButton("浏览权重...", btn_type="default")
         btn_browse_model.setIcon(PhFolderOpen.regular(size=13))
-        btn_browse_model.setStyleSheet("font-size: 12px; padding: 4px 10px;")
+        _MkThemeEngine.apply_style_sheet(btn_browse_model, "font-size: 12px; padding: 4px 10px;")
         btn_browse_model.clicked.connect(self._browse_custom_model)
         box_model_custom.addWidget(self.input_custom_model, stretch=1)
         box_model_custom.addWidget(btn_browse_model)
@@ -2130,7 +2131,7 @@ class TrainCreateDialog(QDialog):
         col_dataset.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         lbl_ds_header = QWidget()
-        lbl_ds_header.setStyleSheet("background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(lbl_ds_header, "background: transparent; border: none;")
         l_dh = QHBoxLayout(lbl_ds_header)
         l_dh.setContentsMargins(0, 0, 0, 0)
         l_dh.setSpacing(6)
@@ -2220,7 +2221,7 @@ class TrainCreateDialog(QDialog):
         # Advanced container (Unified view without navigation bar)
         self.adv_container = QFrame()
         self.adv_container.setObjectName("AdvContainer")
-        self.adv_container.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.adv_container, """
             QFrame#AdvContainer {
                 background-color: transparent;
                 border: none;
@@ -2238,7 +2239,7 @@ class TrainCreateDialog(QDialog):
         self.btn_reset_defaults.setIcon(PhArrowCounterClockwise.regular(size=12, color="#64748b"))
         self.btn_reset_defaults.setToolTip("恢复官方推荐默认超参数配置")
         self.btn_reset_defaults.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_reset_defaults.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.btn_reset_defaults, """
             QPushButton {
                 border: 1px solid #e2e8f0;
                 background-color: #ffffff;
@@ -2276,7 +2277,7 @@ class TrainCreateDialog(QDialog):
         box_opt.addWidget(header_opt)
         box_opt.addWidget(self.combo_optimizer)
         w_opt = QWidget()
-        w_opt.setStyleSheet("background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(w_opt, "background: transparent; border: none;")
         w_opt.setLayout(box_opt)
         grid_opt.addWidget(w_opt, 0, 0)
 
@@ -2473,7 +2474,7 @@ class TrainCreateDialog(QDialog):
 
         # Device combo
         self.lbl_target_dev = QLabel("计算加速设备:")
-        self.lbl_target_dev.setStyleSheet("background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_target_dev, "background: transparent; border: none;")
         self.combo_device = RoundedComboBox(self.card_device, is_dark=ThemeEngine.is_dark())
         self.combo_device.addItems(["0 (GPU 0)", "CPU"])
         self.combo_device.setFixedWidth(185)
@@ -2494,7 +2495,7 @@ class TrainCreateDialog(QDialog):
         cli_header = QHBoxLayout()
         cli_header.setSpacing(8)
         self.lbl_cli_title = QLabel("终端运行指令 (Run in terminal)")
-        self.lbl_cli_title.setStyleSheet("font-size: 12px; font-weight: 600; color: #64748b; background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_cli_title, "font-size: 12px; font-weight: 600; color: #64748b; background: transparent; border: none;")
         cli_header.addWidget(self.lbl_cli_title)
         cli_header.addStretch()
 
@@ -3380,7 +3381,7 @@ class TrainCreateDialog(QDialog):
 
         if is_dark:
             # 1. Dialog main container card
-            self.container_card.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.container_card, """
                 QFrame#DialogContainer {
                     background-color: #1e1e20;
                     border: 1px solid #303036;
@@ -3398,7 +3399,7 @@ class TrainCreateDialog(QDialog):
             """)
 
             # 2. Scroll area & clean scrollbar
-            self.scroll.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.scroll, """
                 QScrollArea {
                     border: none;
                     background-color: transparent;
@@ -3435,15 +3436,15 @@ class TrainCreateDialog(QDialog):
                     background: none;
                 }
             """)
-            self.scroll.viewport().setStyleSheet("background-color: transparent; background: transparent; border: none;")
-            self.scroll_container.setStyleSheet("background-color: transparent; background: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.scroll.viewport(), "background-color: transparent; background: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.scroll_container, "background-color: transparent; background: transparent; border: none;")
 
             # 3. Top Header
-            self.header_widget.setStyleSheet("background: transparent; background-color: transparent; border: none;")
-            self.title_lbl.setStyleSheet("font-size: 18px; font-weight: 700; color: #f4f4f5; background: transparent; border: none;")
-            self.arrow_icon.setStyleSheet("background: transparent; border: none;")
-            self.subtitle_lbl.setStyleSheet("color: #a1a1aa; font-size: 13px; margin-top: -4px; background: transparent; border: none;")
-            self.tag_lbl.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.header_widget, "background: transparent; background-color: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.title_lbl, "font-size: 18px; font-weight: 700; color: #f4f4f5; background: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.arrow_icon, "background: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.subtitle_lbl, "color: #a1a1aa; font-size: 13px; margin-top: -4px; background: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.tag_lbl, """
                 background: #1e293b; 
                 color: #60a5fa; 
                 font-weight: 600; 
@@ -3453,7 +3454,7 @@ class TrainCreateDialog(QDialog):
                 border: 1px solid #2563eb;
             """)
             self.btn_close.setIcon(PhX.bold(size=15, color="#a1a1aa"))
-            self.btn_close.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.btn_close, """
                 QPushButton {
                     border: none;
                     background-color: transparent;
@@ -3466,22 +3467,22 @@ class TrainCreateDialog(QDialog):
 
             # 4. Top Grid (Model & Dataset)
             self.ic_cube.setPixmap(PhCube.pixmap(size=14, color="#f4f4f5", weight="bold", dpr=3.0))
-            self.lbl_model_txt.setStyleSheet("font-size: 13px; font-weight: 600; color: #f4f4f5;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_model_txt, "font-size: 13px; font-weight: 600; color: #f4f4f5;")
             self.ic_database.setPixmap(PhDatabase.pixmap(size=14, color="#f4f4f5", weight="bold", dpr=3.0))
-            self.lbl_dataset_txt.setStyleSheet("font-size: 13px; font-weight: 600; color: #f4f4f5;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_dataset_txt, "font-size: 13px; font-weight: 600; color: #f4f4f5;")
             if hasattr(self, 'card_model_tip') and self.card_model_tip:
-                self.card_model_tip.setStyleSheet("""
+                _MkThemeEngine.apply_style_sheet(self.card_model_tip, """
                     QFrame#ModelTipCard {
                         background-color: #141416;
                         border: 1px solid #27272a;
                         border-radius: 8px;
                     }
                 """)
-                self.lbl_tip_title.setStyleSheet("font-size: 11px; font-weight: 600; color: #cbd5e1; border: none; background: transparent;")
-                self.lbl_tip_sub.setStyleSheet("font-size: 11px; color: #71717a; border: none; background: transparent;")
+                _MkThemeEngine.apply_style_sheet(self.lbl_tip_title, "font-size: 11px; font-weight: 600; color: #cbd5e1; border: none; background: transparent;")
+                _MkThemeEngine.apply_style_sheet(self.lbl_tip_sub, "font-size: 11px; color: #71717a; border: none; background: transparent;")
             if hasattr(self, 'btn_upload_yaml') and self.btn_upload_yaml:
                 self.btn_upload_yaml.setIcon(PhFolderOpen.regular(size=12, color="#f4f4f5"))
-                self.btn_upload_yaml.setStyleSheet("""
+                _MkThemeEngine.apply_style_sheet(self.btn_upload_yaml, """
                     QPushButton {
                         border: 1px solid #3f3f46;
                         background-color: #27272a;
@@ -3498,7 +3499,7 @@ class TrainCreateDialog(QDialog):
                 """)
             if hasattr(self, 'btn_reset_yaml') and self.btn_reset_yaml:
                 self.btn_reset_yaml.setIcon(PhArrowCounterClockwise.regular(size=12, color="#a1a1aa"))
-                self.btn_reset_yaml.setStyleSheet("""
+                _MkThemeEngine.apply_style_sheet(self.btn_reset_yaml, """
                     QPushButton {
                         border: 1px solid #3f3f46;
                         background-color: #27272a;
@@ -3521,21 +3522,21 @@ class TrainCreateDialog(QDialog):
 
             # 5. Dynamic Form Labels & Dividers
             for lbl in self.field_header_labels:
-                lbl.setStyleSheet("font-size: 13px; font-weight: 600; color: #f4f4f5;")
+                _MkThemeEngine.apply_style_sheet(lbl, "font-size: 13px; font-weight: 600; color: #f4f4f5;")
             for lbl in self.input_field_labels:
-                lbl.setStyleSheet("font-size: 12px; font-weight: 500; color: #cbd5e1;")
+                _MkThemeEngine.apply_style_sheet(lbl, "font-size: 12px; font-weight: 500; color: #cbd5e1;")
             for ic in self.info_icons:
                 ic.set_theme(True)
             for lbl in self.section_header_labels:
-                lbl.setStyleSheet("font-size: 13px; font-weight: 700; color: #f1f5f9;")
+                _MkThemeEngine.apply_style_sheet(lbl, "font-size: 13px; font-weight: 700; color: #f1f5f9;")
             for line in self.section_lines:
-                line.setStyleSheet("color: #333338; background-color: #333338; height: 1px; border: none;")
+                _MkThemeEngine.apply_style_sheet(line, "color: #333338; background-color: #333338; height: 1px; border: none;")
 
             # 6. Accordion Header Bar & Advanced Container
             if hasattr(self, "adv_header_bar") and self.adv_header_bar:
                 self.adv_header_bar.apply_theme()
 
-            self.adv_container.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.adv_container, """
                 QFrame#AdvContainer {
                     background-color: transparent;
                     border: none;
@@ -3545,7 +3546,7 @@ class TrainCreateDialog(QDialog):
                 }
             """)
             self.btn_reset_defaults.setIcon(PhArrowCounterClockwise.regular(size=12, color="#cbd5e1"))
-            self.btn_reset_defaults.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.btn_reset_defaults, """
                 QPushButton {
                     border: 1px solid #3f3f46;
                     background-color: #27272a;
@@ -3563,7 +3564,7 @@ class TrainCreateDialog(QDialog):
             """)
 
             # 7. Device & Environment Card
-            self.card_device.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.card_device, """
                 QFrame#DeviceCard {
                     background-color: #141416;
                     border: 1px solid #2e2e32;
@@ -3582,20 +3583,20 @@ class TrainCreateDialog(QDialog):
             for cb in [getattr(self, "combo_device", None), getattr(self, "combo_imgsz", None), getattr(self, "combo_optimizer", None)]:
                 if cb and hasattr(cb, "set_dark_mode"):
                     cb.set_dark_mode(True)
-            self.lbl_target_dev.setStyleSheet("font-size: 12px; color: #a1a1aa; background: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_target_dev, "font-size: 12px; color: #a1a1aa; background: transparent; border: none;")
             if hasattr(self, "cli_viewer") and self.cli_viewer:
                 self.cli_viewer.apply_theme(True)
             if hasattr(self, "lbl_cli_title") and self.lbl_cli_title:
-                self.lbl_cli_title.setStyleSheet("font-size: 12px; font-weight: 600; color: #a1a1aa; background: transparent; border: none;")
+                _MkThemeEngine.apply_style_sheet(self.lbl_cli_title, "font-size: 12px; font-weight: 600; color: #a1a1aa; background: transparent; border: none;")
 
             # 8. Footer & Action Buttons
-            self.footer_widget.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.footer_widget, """
                 QFrame#DialogFooter {
                     border-top: 1px solid #2e2e32;
                     background-color: transparent;
                 }
             """)
-            self.btn_cancel.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.btn_cancel, """
                 QPushButton {
                     background-color: #27272a;
                     border: 1px solid #3f3f46;
@@ -3610,7 +3611,7 @@ class TrainCreateDialog(QDialog):
                     border-color: #52525b;
                 }
             """)
-            self.btn_start.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.btn_start, """
                 QPushButton {
                     background-color: #2563eb;
                     border: 1px solid #2563eb;
@@ -3629,7 +3630,7 @@ class TrainCreateDialog(QDialog):
         else:
             # Light Mode (Default)
             # 1. Dialog main container card
-            self.container_card.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.container_card, """
                 QFrame#DialogContainer {
                     background-color: #ffffff;
                     border: 1px solid #e2e8f0;
@@ -3647,7 +3648,7 @@ class TrainCreateDialog(QDialog):
             """)
 
             # 2. Scroll area & clean scrollbar
-            self.scroll.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.scroll, """
                 QScrollArea {
                     border: none;
                     background-color: transparent;
@@ -3684,15 +3685,15 @@ class TrainCreateDialog(QDialog):
                     background: none;
                 }
             """)
-            self.scroll.viewport().setStyleSheet("background-color: transparent; background: transparent; border: none;")
-            self.scroll_container.setStyleSheet("background-color: transparent; background: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.scroll.viewport(), "background-color: transparent; background: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.scroll_container, "background-color: transparent; background: transparent; border: none;")
 
             # 3. Top Header
-            self.header_widget.setStyleSheet("background: transparent; background-color: transparent; border: none;")
-            self.title_lbl.setStyleSheet("font-size: 18px; font-weight: 700; color: #09090b; background: transparent; border: none;")
-            self.arrow_icon.setStyleSheet("background: transparent; border: none;")
-            self.subtitle_lbl.setStyleSheet("color: #71717a; font-size: 13px; margin-top: -4px; background: transparent; border: none;")
-            self.tag_lbl.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.header_widget, "background: transparent; background-color: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.title_lbl, "font-size: 18px; font-weight: 700; color: #09090b; background: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.arrow_icon, "background: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.subtitle_lbl, "color: #71717a; font-size: 13px; margin-top: -4px; background: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.tag_lbl, """
                 background: #eff6ff; 
                 color: #2563eb; 
                 font-weight: 600; 
@@ -3702,7 +3703,7 @@ class TrainCreateDialog(QDialog):
                 border: 1px solid #dbeafe;
             """)
             self.btn_close.setIcon(PhX.bold(size=15, color="#71717a"))
-            self.btn_close.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.btn_close, """
                 QPushButton {
                     border: none;
                     background-color: transparent;
@@ -3715,22 +3716,22 @@ class TrainCreateDialog(QDialog):
 
             # 4. Top Grid (Model & Dataset)
             self.ic_cube.setPixmap(PhCube.pixmap(size=14, color="#18181b", weight="bold", dpr=3.0))
-            self.lbl_model_txt.setStyleSheet("font-size: 13px; font-weight: 600; color: #18181b;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_model_txt, "font-size: 13px; font-weight: 600; color: #18181b;")
             self.ic_database.setPixmap(PhDatabase.pixmap(size=14, color="#18181b", weight="bold", dpr=3.0))
-            self.lbl_dataset_txt.setStyleSheet("font-size: 13px; font-weight: 600; color: #18181b;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_dataset_txt, "font-size: 13px; font-weight: 600; color: #18181b;")
             if hasattr(self, 'card_model_tip') and self.card_model_tip:
-                self.card_model_tip.setStyleSheet("""
+                _MkThemeEngine.apply_style_sheet(self.card_model_tip, """
                     QFrame#ModelTipCard {
                         background-color: #f8fafc;
                         border: 1px solid #e2e8f0;
                         border-radius: 8px;
                     }
                 """)
-                self.lbl_tip_title.setStyleSheet("font-size: 11px; font-weight: 600; color: #475569; border: none; background: transparent;")
-                self.lbl_tip_sub.setStyleSheet("font-size: 11px; color: #94a3b8; border: none; background: transparent;")
+                _MkThemeEngine.apply_style_sheet(self.lbl_tip_title, "font-size: 11px; font-weight: 600; color: #475569; border: none; background: transparent;")
+                _MkThemeEngine.apply_style_sheet(self.lbl_tip_sub, "font-size: 11px; color: #94a3b8; border: none; background: transparent;")
             if hasattr(self, 'btn_upload_yaml') and self.btn_upload_yaml:
                 self.btn_upload_yaml.setIcon(PhFolderOpen.regular(size=12, color="#0f172a"))
-                self.btn_upload_yaml.setStyleSheet("""
+                _MkThemeEngine.apply_style_sheet(self.btn_upload_yaml, """
                     QPushButton {
                         border: 1px solid #e2e8f0;
                         background-color: #ffffff;
@@ -3747,7 +3748,7 @@ class TrainCreateDialog(QDialog):
                 """)
             if hasattr(self, 'btn_reset_yaml') and self.btn_reset_yaml:
                 self.btn_reset_yaml.setIcon(PhArrowCounterClockwise.regular(size=12, color="#64748b"))
-                self.btn_reset_yaml.setStyleSheet("""
+                _MkThemeEngine.apply_style_sheet(self.btn_reset_yaml, """
                     QPushButton {
                         border: 1px solid #e2e8f0;
                         background-color: #ffffff;
@@ -3770,21 +3771,21 @@ class TrainCreateDialog(QDialog):
 
             # 5. Dynamic Form Labels & Dividers
             for lbl in self.field_header_labels:
-                lbl.setStyleSheet("font-size: 13px; font-weight: 600; color: #18181b;")
+                _MkThemeEngine.apply_style_sheet(lbl, "font-size: 13px; font-weight: 600; color: #18181b;")
             for lbl in self.input_field_labels:
-                lbl.setStyleSheet("font-size: 12px; font-weight: 500; color: #334155;")
+                _MkThemeEngine.apply_style_sheet(lbl, "font-size: 12px; font-weight: 500; color: #334155;")
             for ic in self.info_icons:
                 ic.set_theme(False)
             for lbl in self.section_header_labels:
-                lbl.setStyleSheet("font-size: 13px; font-weight: 700; color: #0f172a;")
+                _MkThemeEngine.apply_style_sheet(lbl, "font-size: 13px; font-weight: 700; color: #0f172a;")
             for line in self.section_lines:
-                line.setStyleSheet("color: #e2e8f0; background-color: #e2e8f0; height: 1px; border: none;")
+                _MkThemeEngine.apply_style_sheet(line, "color: #e2e8f0; background-color: #e2e8f0; height: 1px; border: none;")
 
             # 6. Accordion Header Bar & Advanced Container
             if hasattr(self, "adv_header_bar") and self.adv_header_bar:
                 self.adv_header_bar.apply_theme()
 
-            self.adv_container.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.adv_container, """
                 QFrame#AdvContainer {
                     background-color: transparent;
                     border: none;
@@ -3794,7 +3795,7 @@ class TrainCreateDialog(QDialog):
                 }
             """)
             self.btn_reset_defaults.setIcon(PhArrowCounterClockwise.regular(size=12, color="#64748b"))
-            self.btn_reset_defaults.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.btn_reset_defaults, """
                 QPushButton {
                     border: 1px solid #e2e8f0;
                     background-color: #ffffff;
@@ -3812,7 +3813,7 @@ class TrainCreateDialog(QDialog):
             """)
 
             # 7. Device & Environment Card
-            self.card_device.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.card_device, """
                 QFrame#DeviceCard {
                     background-color: #f8fafc;
                     border: 1px solid #e2e8f0;
@@ -3831,20 +3832,20 @@ class TrainCreateDialog(QDialog):
             for cb in [getattr(self, "combo_device", None), getattr(self, "combo_imgsz", None), getattr(self, "combo_optimizer", None)]:
                 if cb and hasattr(cb, "set_dark_mode"):
                     cb.set_dark_mode(False)
-            self.lbl_target_dev.setStyleSheet("font-size: 12px; color: #64748b; background: transparent; border: none;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_target_dev, "font-size: 12px; color: #64748b; background: transparent; border: none;")
             if hasattr(self, "cli_viewer") and self.cli_viewer:
                 self.cli_viewer.apply_theme(False)
             if hasattr(self, "lbl_cli_title") and self.lbl_cli_title:
-                self.lbl_cli_title.setStyleSheet("font-size: 12px; font-weight: 600; color: #64748b; background: transparent; border: none;")
+                _MkThemeEngine.apply_style_sheet(self.lbl_cli_title, "font-size: 12px; font-weight: 600; color: #64748b; background: transparent; border: none;")
 
             # 8. Footer & Action Buttons
-            self.footer_widget.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.footer_widget, """
                 QFrame#DialogFooter {
                     border-top: 1px solid #f1f5f9;
                     background-color: transparent;
                 }
             """)
-            self.btn_cancel.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.btn_cancel, """
                 QPushButton {
                     background-color: #ffffff;
                     border: 1px solid #e2e8f0;
@@ -3859,7 +3860,7 @@ class TrainCreateDialog(QDialog):
                     border-color: #cbd5e1;
                 }
             """)
-            self.btn_start.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.btn_start, """
                 QPushButton {
                     background-color: #09090b;
                     border: 1px solid #09090b;

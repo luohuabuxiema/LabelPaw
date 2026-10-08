@@ -9,6 +9,7 @@ Strictly benchmarked against Ultralytics HUB Experiment Detail Pages (Images 3, 
 - Tab 2: Predict (Interactive Inference: Dropzone, Sample Picks, Conf/IoU Sliders, Live Box/Mask Overlay, Latency)
 - Tab 3: Export (Model format conversion to ONNX, TensorRT, TorchScript, OpenVINO)
 """
+from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 import os
 import sys
 import re
@@ -555,7 +556,7 @@ class RunInformationCard(MkCard):
             bd = "#45475a" if self.is_dark else "#e2e8f0"
 
         self.badge_status.setText(text)
-        self.badge_status.setStyleSheet(f"""
+        _MkThemeEngine.apply_style_sheet(self.badge_status, f"""
             QLabel {{
                 background-color: {bg};
                 color: {fg};
@@ -584,19 +585,19 @@ class RunInformationCard(MkCard):
         text_primary = "#cdd6f4" if is_dark else "#0f172a"
         text_muted = "#a6adc8" if is_dark else "#64748b"
 
-        self.lbl_title.setStyleSheet(f"color: {text_primary}; background: transparent;")
-        self.lbl_subtitle.setStyleSheet(f"color: {text_muted}; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_title, f"color: {text_primary}; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_subtitle, f"color: {text_muted}; background: transparent;")
 
-        self.lbl_start_title.setStyleSheet(f"color: {text_muted}; background: transparent;")
-        self.lbl_start_val.setStyleSheet(f"color: {text_primary}; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_start_title, f"color: {text_muted}; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_start_val, f"color: {text_primary}; background: transparent;")
 
-        self.lbl_py_title.setStyleSheet(f"color: {text_muted}; background: transparent;")
-        self.lbl_py_val.setStyleSheet(f"color: {text_primary}; background: transparent;")
-        self.lbl_cpu_val.setStyleSheet(f"color: {text_primary}; background: transparent;")
-        self.lbl_gpu_val.setStyleSheet(f"color: {text_primary}; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_py_title, f"color: {text_muted}; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_py_val, f"color: {text_primary}; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_cpu_val, f"color: {text_primary}; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_gpu_val, f"color: {text_primary}; background: transparent;")
         self._update_hardware_labels(self.cpu_name, self.gpu_name)
 
-        self.lbl_cmd_header.setStyleSheet(f"color: {text_muted}; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_cmd_header, f"color: {text_muted}; background: transparent;")
 
     def _get_skeleton_blocks(self, rect, content_w, content_h, pad_x, pad_y):
         """生成与真实字段 1:1 精确对应的流光骨架屏布局块（100% 清空真实文字，杜绝大色块）"""
@@ -710,7 +711,7 @@ class ExperimentDetailView(MkPage):
         header_layout.addWidget(self.lbl_task_title)
 
         self.lbl_task_type_tag = QLabel("Segment")
-        self.lbl_task_type_tag.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.lbl_task_type_tag, """
             background: #eff6ff; color: #2563eb; font-weight: 600;
             padding: 3px 8px; border-radius: 4px; font-size: 11px;
             border: 1px solid #dbeafe;
@@ -718,14 +719,14 @@ class ExperimentDetailView(MkPage):
         header_layout.addWidget(self.lbl_task_type_tag)
 
         self.lbl_status_badge = QLabel("COMPLETED")
-        self.lbl_status_badge.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self.lbl_status_badge, """
             background: #dcfce7; color: #15803d; font-weight: 700;
             padding: 3px 8px; border-radius: 4px; font-size: 11px;
         """)
         header_layout.addWidget(self.lbl_status_badge)
 
         self.lbl_updated_time = QLabel("刚刚更新")
-        self.lbl_updated_time.setStyleSheet("color: #94a3b8; font-size: 12px;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_updated_time, "color: #94a3b8; font-size: 12px;")
         header_layout.addWidget(self.lbl_updated_time)
 
         header_layout.addStretch()
@@ -768,7 +769,7 @@ class ExperimentDetailView(MkPage):
         main_layout.addLayout(nav_container)
 
         self.pages_stack = MkStackedWidget()
-        self.pages_stack.setStyleSheet("QStackedWidget { background: transparent; border: none; }")
+        _MkThemeEngine.apply_style_sheet(self.pages_stack, "QStackedWidget { background: transparent; border: none; }")
         self.pages_stack.currentChanged.connect(self._on_stack_page_changed)
 
         # Page 0: Overview (Image 3)
@@ -806,10 +807,10 @@ class ExperimentDetailView(MkPage):
         c_layout.setSpacing(4)
 
         lbl_t = QLabel(title)
-        lbl_t.setStyleSheet("color: #64748b; font-size: 13px; font-weight: 600;")
+        _MkThemeEngine.apply_style_sheet(lbl_t, "color: #64748b; font-size: 13px; font-weight: 600;")
         lbl_v = QLabel(val)
         lbl_v.setFont(QFont("Segoe UI", 22, QFont.Weight.Bold))
-        lbl_v.setStyleSheet(f"color: {accent_color}; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(lbl_v, f"color: {accent_color}; background: transparent;")
         card._lbl_val = lbl_v
         card._lbl_title = lbl_t
 
@@ -818,8 +819,8 @@ class ExperimentDetailView(MkPage):
 
         def _card_set_theme(is_dark: bool):
             fg_title = "#a6adc8" if is_dark else "#64748b"
-            lbl_t.setStyleSheet(f"color: {fg_title}; font-size: 13px; font-weight: 600; background: transparent;")
-            lbl_v.setStyleSheet(f"color: {card._accent_color}; background: transparent;")
+            _MkThemeEngine.apply_style_sheet(lbl_t, f"color: {fg_title}; font-size: 13px; font-weight: 600; background: transparent;")
+            _MkThemeEngine.apply_style_sheet(lbl_v, f"color: {card._accent_color}; background: transparent;")
 
         card.set_theme = _card_set_theme
         _card_set_theme(self.is_dark if hasattr(self, "is_dark") else False)
@@ -928,7 +929,7 @@ class ExperimentDetailView(MkPage):
         layout.addLayout(sub_nav_row)
 
         self.train_sub_stack = MkStackedWidget()
-        self.train_sub_stack.setStyleSheet("QStackedWidget { background: transparent; border: none; }")
+        _MkThemeEngine.apply_style_sheet(self.train_sub_stack, "QStackedWidget { background: transparent; border: none; }")
         self.train_sub_stack.currentChanged.connect(lambda idx: (self.train_sub_stack.updateGeometry(), self.updateGeometry()))
 
         # Sub-page 0: Charts (Metrics & Loss)
@@ -1016,13 +1017,13 @@ class ExperimentDetailView(MkPage):
         header_row = QHBoxLayout()
         self.lbl_predict_in = QLabel("输入图片 (Input Image)")
         self.lbl_predict_in.setFont(QFont("Segoe UI", 13, QFont.Weight.Bold))
-        self.lbl_predict_in.setStyleSheet("color: #0f172a;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_predict_in, "color: #0f172a;")
         header_row.addWidget(self.lbl_predict_in)
         header_row.addStretch()
         lc_layout.addLayout(header_row)
 
         self.lbl_predict_sub = QLabel("上传图片或选择内置示例，选中后自动开始推理")
-        self.lbl_predict_sub.setStyleSheet("color: #64748b; font-size: 11px;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_predict_sub, "color: #64748b; font-size: 11px;")
         lc_layout.addWidget(self.lbl_predict_sub)
 
         # ── Image preview area: QStackedWidget ───────────────────────
@@ -1038,7 +1039,7 @@ class ExperimentDetailView(MkPage):
         # Page 1 – Result view container (image label + floating toolbar)
         self._result_container = QFrame()
         self._result_container.setObjectName("ResultContainer")
-        self._result_container.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self._result_container, """
             QFrame#ResultContainer {
                 background: #0f172a;
                 border-radius: 10px;
@@ -1078,7 +1079,7 @@ class ExperimentDetailView(MkPage):
 
         # ── Example cards row ────────────────────────────────────────
         self.lbl_example = QLabel("或尝试示例图片")
-        self.lbl_example.setStyleSheet("color: #475569; font-size: 11px; font-weight: 600; margin-top: 4px;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_example, "color: #475569; font-size: 11px; font-weight: 600; margin-top: 4px;")
         lc_layout.addWidget(self.lbl_example)
 
         self._example_cards = []
@@ -1115,7 +1116,7 @@ class ExperimentDetailView(MkPage):
         self.quick_picks_layout = QHBoxLayout()
         self.quick_picks_layout.setSpacing(8)
         self.lbl_samples_hint = QLabel("快速选择数据集样例:")
-        self.lbl_samples_hint.setStyleSheet("color: #64748b; font-size: 11px;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_samples_hint, "color: #64748b; font-size: 11px;")
         self.quick_picks_layout.addWidget(self.lbl_samples_hint)
         self.quick_picks_container = QWidget()
         self.quick_picks_container.setLayout(self.quick_picks_layout)
@@ -1129,7 +1130,7 @@ class ExperimentDetailView(MkPage):
         # ── Sliders / param controls row ─────────────────────────────
         self._sliders_card = QFrame()
         self._sliders_card.setObjectName("SlidersCard")
-        self._sliders_card.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self._sliders_card, """
             QFrame#SlidersCard {
                 background: #f8fafc;
                 border: 1px solid #e2e8f0;
@@ -1145,12 +1146,12 @@ class ExperimentDetailView(MkPage):
         v_conf = QVBoxLayout()
         v_conf.setSpacing(3)
         self.lbl_conf_val = QLabel("置信度 (Confidence)")
-        self.lbl_conf_val.setStyleSheet("font-size: 11px; font-weight: 600; color: #475569;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_conf_val, "font-size: 11px; font-weight: 600; color: #475569;")
         self.slider_conf = QSlider(Qt.Orientation.Horizontal)
         self.slider_conf.setRange(5, 95)
         self.slider_conf.setValue(25)
         self._lbl_conf_num = QLabel("0.25")
-        self._lbl_conf_num.setStyleSheet("font-size: 11px; color: #2563eb; font-weight: 700;")
+        _MkThemeEngine.apply_style_sheet(self._lbl_conf_num, "font-size: 11px; color: #2563eb; font-weight: 700;")
         self._lbl_conf_num.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.slider_conf.valueChanged.connect(
             lambda v: self._lbl_conf_num.setText(f"{v / 100.0:.2f}")
@@ -1165,12 +1166,12 @@ class ExperimentDetailView(MkPage):
         v_iou = QVBoxLayout()
         v_iou.setSpacing(3)
         self.lbl_iou_val = QLabel("交并比 (IoU)")
-        self.lbl_iou_val.setStyleSheet("font-size: 11px; font-weight: 600; color: #475569;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_iou_val, "font-size: 11px; font-weight: 600; color: #475569;")
         self.slider_iou = QSlider(Qt.Orientation.Horizontal)
         self.slider_iou.setRange(10, 95)
         self.slider_iou.setValue(70)
         self._lbl_iou_num = QLabel("0.70")
-        self._lbl_iou_num.setStyleSheet("font-size: 11px; color: #2563eb; font-weight: 700;")
+        _MkThemeEngine.apply_style_sheet(self._lbl_iou_num, "font-size: 11px; color: #2563eb; font-weight: 700;")
         self._lbl_iou_num.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.slider_iou.valueChanged.connect(
             lambda v: self._lbl_iou_num.setText(f"{v / 100.0:.2f}")
@@ -1185,7 +1186,7 @@ class ExperimentDetailView(MkPage):
         v_sz = QVBoxLayout()
         v_sz.setSpacing(3)
         self.lbl_sz = QLabel("推理尺寸 (imgsz)")
-        self.lbl_sz.setStyleSheet("font-size: 11px; font-weight: 600; color: #475569;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_sz, "font-size: 11px; font-weight: 600; color: #475569;")
         self.combo_imgsz = QComboBox()
         self.combo_imgsz.addItems(["640", "320", "1280"])
         self.combo_imgsz.currentIndexChanged.connect(self._on_param_changed)
@@ -1204,7 +1205,7 @@ class ExperimentDetailView(MkPage):
 
         # ── Right Column ─────────────────────────────────────────────
         right_col = QWidget()
-        right_col.setStyleSheet("background: transparent;")
+        _MkThemeEngine.apply_style_sheet(right_col, "background: transparent;")
         rc_layout = QVBoxLayout(right_col)
         rc_layout.setContentsMargins(10, 0, 8, 0)
         rc_layout.setSpacing(0)
@@ -1212,7 +1213,7 @@ class ExperimentDetailView(MkPage):
         # ─── 单一结果卡片（严格对标图二红框，纯单一卡片结构）──────────
         self._result_card = QFrame()
         self._result_card.setObjectName("ResultCard")
-        self._result_card.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self._result_card, """
             QFrame#ResultCard {
                 background: #ffffff;
                 border: 1px solid #e5e7eb;
@@ -1234,12 +1235,12 @@ class ExperimentDetailView(MkPage):
         top_row.setContentsMargins(0, 0, 0, 0)
         self._lbl_result_title = QLabel("推理结果")
         self._lbl_result_title.setFont(QFont("Segoe UI", 15, QFont.Weight.Bold))
-        self._lbl_result_title.setStyleSheet("color: #111827; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(self._lbl_result_title, "color: #111827; background: transparent;")
         top_row.addWidget(self._lbl_result_title)
         top_row.addStretch()
         self._lbl_total_ms = QLabel("-- ms")
         self._lbl_total_ms.setFont(QFont("Segoe UI", 11, QFont.Weight.DemiBold))
-        self._lbl_total_ms.setStyleSheet("""
+        _MkThemeEngine.apply_style_sheet(self._lbl_total_ms, """
             color: #374151;
             background: #f3f4f6;
             border-radius: 8px;
@@ -1251,7 +1252,7 @@ class ExperimentDetailView(MkPage):
         # 副标题：检测数量 + 图像尺寸（紧随标题下方，图二规范）
         self._lbl_det_subtitle = QLabel("尚未运行推理")
         self._lbl_det_subtitle.setFont(QFont("Segoe UI", 10))
-        self._lbl_det_subtitle.setStyleSheet("color: #6b7280; margin-top: 4px; margin-bottom: 14px; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(self._lbl_det_subtitle, "color: #6b7280; margin-top: 4px; margin-bottom: 14px; background: transparent;")
         result_card_layout.addWidget(self._lbl_det_subtitle)
 
         # 4格速度统计框（对标图二：数值在上、标签在下，轻量浅灰底框，无任何横线切割）
@@ -1262,19 +1263,19 @@ class ExperimentDetailView(MkPage):
         self._speed_boxes = {}
         for label_cn, key in speed_labels:
             box = QFrame()
-            box.setStyleSheet("QFrame { background: #f3f4f6; border-radius: 8px; border: none; }")
+            _MkThemeEngine.apply_style_sheet(box, "QFrame { background: #f3f4f6; border-radius: 8px; border: none; }")
             box_layout = QVBoxLayout(box)
             box_layout.setContentsMargins(6, 8, 6, 8)
             box_layout.setSpacing(2)
             # 时间数值在上（严格对标图二）
             lbl_val = QLabel("--")
             lbl_val.setFont(QFont("Segoe UI", 12, QFont.Weight.DemiBold))
-            lbl_val.setStyleSheet("color: #111827; background: transparent;")
+            _MkThemeEngine.apply_style_sheet(lbl_val, "color: #111827; background: transparent;")
             lbl_val.setAlignment(Qt.AlignmentFlag.AlignHCenter)
             # 指标标签在下（严格对标图二）
             lbl_name = QLabel(label_cn)
             lbl_name.setFont(QFont("Segoe UI", 9))
-            lbl_name.setStyleSheet("color: #6b7280; background: transparent;")
+            _MkThemeEngine.apply_style_sheet(lbl_name, "color: #6b7280; background: transparent;")
             lbl_name.setAlignment(Qt.AlignmentFlag.AlignHCenter)
             box_layout.addWidget(lbl_val)
             box_layout.addWidget(lbl_name)
@@ -1285,17 +1286,17 @@ class ExperimentDetailView(MkPage):
         # 识别目标小标题（图二规范：小标题直接紧接，无横向割裂分隔线）
         self._lbl_det_section = QLabel("识别目标")
         self._lbl_det_section.setFont(QFont("Segoe UI", 11, QFont.Weight.DemiBold))
-        self._lbl_det_section.setStyleSheet("color: #374151; margin-top: 18px; margin-bottom: 8px; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(self._lbl_det_section, "color: #374151; margin-top: 18px; margin-bottom: 8px; background: transparent;")
         result_card_layout.addWidget(self._lbl_det_section)
 
         # 检测列表容器（动态填充）
         self._det_list_container = QFrame()
-        self._det_list_container.setStyleSheet("background: transparent; border: none;")
+        _MkThemeEngine.apply_style_sheet(self._det_list_container, "background: transparent; border: none;")
         self._det_list_layout = QVBoxLayout(self._det_list_container)
         self._det_list_layout.setContentsMargins(0, 0, 0, 0)
         self._det_list_layout.setSpacing(2)
         self._lbl_no_det = QLabel("暂无检测结果")
-        self._lbl_no_det.setStyleSheet("color: #9ca3af; font-size: 11px; padding: 4px 0; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(self._lbl_no_det, "color: #9ca3af; font-size: 11px; padding: 4px 0; background: transparent;")
         self._det_list_layout.addWidget(self._lbl_no_det)
         result_card_layout.addWidget(self._det_list_container)
 
@@ -1310,7 +1311,7 @@ class ExperimentDetailView(MkPage):
             t_ver = "PyTorch"
         self.lbl_predict_footer = QLabel(f"Ultralytics {u_ver} · {t_ver}")
         self.lbl_predict_footer.setFont(QFont("Segoe UI", 9))
-        self.lbl_predict_footer.setStyleSheet("color: #9ca3af; margin-top: 20px; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_predict_footer, "color: #9ca3af; margin-top: 20px; background: transparent;")
         result_card_layout.addWidget(self.lbl_predict_footer)
 
         rc_layout.addWidget(self._result_card)
@@ -1385,7 +1386,7 @@ class ExperimentDetailView(MkPage):
                     w.setParent(None)
                     w.deleteLater()
             lbl_no_det = QLabel("暂无检测结果")
-            lbl_no_det.setStyleSheet("color: #9ca3af; font-size: 11px; padding: 4px 0; background: transparent;")
+            _MkThemeEngine.apply_style_sheet(lbl_no_det, "color: #9ca3af; font-size: 11px; padding: 4px 0; background: transparent;")
             self._det_list_layout.addWidget(lbl_no_det)
 
     def _on_param_changed(self):
@@ -1480,7 +1481,7 @@ class ExperimentDetailView(MkPage):
 
         if not dets:
             no_det = QLabel("暂无检测结果")
-            no_det.setStyleSheet("color: #9ca3af; font-size: 11px; padding: 4px 0; background: transparent;")
+            _MkThemeEngine.apply_style_sheet(no_det, "color: #9ca3af; font-size: 11px; padding: 4px 0; background: transparent;")
             self._det_list_layout.addWidget(no_det)
         else:
             for i, d in enumerate(dets):
@@ -1492,25 +1493,25 @@ class ExperimentDetailView(MkPage):
                 dot_color = _dot_colors[i % len(_dot_colors)]
                 dot = QLabel("●")
                 dot.setFont(QFont("Segoe UI", 9))
-                dot.setStyleSheet(f"color: {dot_color}; background: transparent;")
+                _MkThemeEngine.apply_style_sheet(dot, f"color: {dot_color}; background: transparent;")
                 dot.setFixedWidth(14)
                 row.addWidget(dot)
 
                 # Class name
                 lbl_cls = QLabel(d["class"])
                 lbl_cls.setFont(QFont("Segoe UI", 11, QFont.Weight.Medium))
-                lbl_cls.setStyleSheet("color: #111827; background: transparent;")
+                _MkThemeEngine.apply_style_sheet(lbl_cls, "color: #111827; background: transparent;")
                 row.addWidget(lbl_cls)
                 row.addStretch()
 
                 # Confidence
                 lbl_conf = QLabel(f"{d['confidence'] * 100:.1f}%")
                 lbl_conf.setFont(QFont("Segoe UI", 11))
-                lbl_conf.setStyleSheet("color: #6b7280; background: transparent;")
+                _MkThemeEngine.apply_style_sheet(lbl_conf, "color: #6b7280; background: transparent;")
                 row.addWidget(lbl_conf)
 
                 row_widget = QWidget()
-                row_widget.setStyleSheet("background: transparent;")
+                _MkThemeEngine.apply_style_sheet(row_widget, "background: transparent;")
                 row_widget.setLayout(row)
                 self._det_list_layout.addWidget(row_widget)
 
@@ -1551,14 +1552,14 @@ class ExperimentDetailView(MkPage):
         top_box.setSpacing(4)
         self.lbl_export_h1 = QLabel("导出格式 (Export Formats)")
         self.lbl_export_h1.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
-        self.lbl_export_h1.setStyleSheet("color: #111827; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_export_h1, "color: #111827; background: transparent;")
         top_box.addWidget(self.lbl_export_h1)
 
         self.lbl_export_desc = QLabel(
             "将 PyTorch 模型转换为不同工业端部署格式。您可以为每种格式导出具有不同设置（如不同图像尺寸、量化精度）的多个版本。"
         )
         self.lbl_export_desc.setFont(QFont("Segoe UI", 10))
-        self.lbl_export_desc.setStyleSheet("color: #64748b; background: transparent;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_export_desc, "color: #64748b; background: transparent;")
         top_box.addWidget(self.lbl_export_desc)
         c_layout.addLayout(top_box)
 
@@ -1842,7 +1843,7 @@ class ExperimentDetailView(MkPage):
         st_color = "#15803d" if status in ("SUCCESS", "COMPLETED") else "#b91c1c"
         st_bg = "#dcfce7" if status in ("SUCCESS", "COMPLETED") else "#fee2e2"
         self.lbl_status_badge.setText(status)
-        self.lbl_status_badge.setStyleSheet(f"background: {st_bg}; color: {st_color}; font-weight: bold; padding: 3px 8px; border-radius: 4px; font-size: 11px;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_status_badge, f"background: {st_bg}; color: {st_color}; font-weight: bold; padding: 3px 8px; border-radius: 4px; font-size: 11px;")
 
         # 2. Enter Skeleton Shimmer Loading state on all cards
         self.set_loading(True)
@@ -1878,7 +1879,8 @@ class ExperimentDetailView(MkPage):
         self.run_async(_fetch, on_success=_on_loaded, auto_loading=False)
 
     def apply_theme(self, *args):
-        self.set_theme(ThemeEngine.is_dark())
+        if self.isVisible():
+            self.set_theme(ThemeEngine.is_dark())
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -2113,7 +2115,7 @@ class ExperimentDetailView(MkPage):
                     btn = QToolButton()
                     btn.setText(os.path.basename(p)[:14])
                     btn.setCursor(Qt.CursorShape.PointingHandCursor)
-                    btn.setStyleSheet("""
+                    _MkThemeEngine.apply_style_sheet(btn, """
                         QToolButton {
                             background: #e2e8f0;
                             border: 1px solid #cbd5e1;
@@ -2175,13 +2177,17 @@ class ExperimentDetailView(MkPage):
             MkMessage.warning(self, "该任务的存放目录尚不存在！")
 
     def set_theme(self, is_dark: bool):
+        version = (ThemeEngine.theme_version(), is_dark)
+        if getattr(self, "_applied_theme_version", None) == version:
+            return
+        self._applied_theme_version = version
         self.is_dark = is_dark
 
         # Top Header Elements
         if hasattr(self, "lbl_task_title"):
-            self.lbl_task_title.setStyleSheet("color: #f1f5f9; background: transparent;" if is_dark else "color: #0f172a; background: transparent;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_task_title, "color: #f1f5f9; background: transparent;" if is_dark else "color: #0f172a; background: transparent;")
         if hasattr(self, "lbl_task_type_tag"):
-            self.lbl_task_type_tag.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.lbl_task_type_tag, """
                 background: #1e3a5f; color: #60a5fa; font-weight: 600;
                 padding: 3px 8px; border-radius: 4px; font-size: 11px;
                 border: 1px solid #2563eb;
@@ -2191,7 +2197,7 @@ class ExperimentDetailView(MkPage):
                 border: 1px solid #dbeafe;
             """)
         if hasattr(self, "lbl_status_badge"):
-            self.lbl_status_badge.setStyleSheet("""
+            _MkThemeEngine.apply_style_sheet(self.lbl_status_badge, """
                 background: #064e3b; color: #34d399; font-weight: 700;
                 padding: 3px 8px; border-radius: 4px; font-size: 11px;
             """ if is_dark else """
@@ -2199,7 +2205,7 @@ class ExperimentDetailView(MkPage):
                 padding: 3px 8px; border-radius: 4px; font-size: 11px;
             """)
         if hasattr(self, "lbl_updated_time"):
-            self.lbl_updated_time.setStyleSheet("color: #94a3b8; font-size: 12px; background: transparent;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_updated_time, "color: #94a3b8; font-size: 12px; background: transparent;")
 
         # Segmented Tabs
         if hasattr(self, "primary_nav") and self.primary_nav and hasattr(self.primary_nav, "set_theme"):
@@ -2229,9 +2235,9 @@ class ExperimentDetailView(MkPage):
 
         # Update Export tab headers & format cards
         if hasattr(self, "lbl_export_h1"):
-            self.lbl_export_h1.setStyleSheet("color: #f1f5f9; background: transparent;" if is_dark else "color: #111827; background: transparent;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_export_h1, "color: #f1f5f9; background: transparent;" if is_dark else "color: #111827; background: transparent;")
         if hasattr(self, "lbl_export_desc"):
-            self.lbl_export_desc.setStyleSheet("color: #a1a1aa; background: transparent;" if is_dark else "color: #64748b; background: transparent;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_export_desc, "color: #a1a1aa; background: transparent;" if is_dark else "color: #64748b; background: transparent;")
         if hasattr(self, "_format_cards"):
             for card in self._format_cards.values():
                 if hasattr(card, "set_theme"):
@@ -2239,21 +2245,21 @@ class ExperimentDetailView(MkPage):
 
         # Update Predict tab
         if hasattr(self, "lbl_predict_in"):
-            self.lbl_predict_in.setStyleSheet("color: #f1f5f9; background: transparent;" if is_dark else "color: #0f172a; background: transparent;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_predict_in, "color: #f1f5f9; background: transparent;" if is_dark else "color: #0f172a; background: transparent;")
         if hasattr(self, "lbl_predict_sub"):
-            self.lbl_predict_sub.setStyleSheet("color: #94a3b8; font-size: 11px; background: transparent;" if is_dark else "color: #64748b; font-size: 11px; background: transparent;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_predict_sub, "color: #94a3b8; font-size: 11px; background: transparent;" if is_dark else "color: #64748b; font-size: 11px; background: transparent;")
         if hasattr(self, "lbl_example"):
-            self.lbl_example.setStyleSheet("color: #94a3b8; font-size: 11px; font-weight: 600; margin-top: 4px; background: transparent;" if is_dark else "color: #475569; font-size: 11px; font-weight: 600; margin-top: 4px; background: transparent;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_example, "color: #94a3b8; font-size: 11px; font-weight: 600; margin-top: 4px; background: transparent;" if is_dark else "color: #475569; font-size: 11px; font-weight: 600; margin-top: 4px; background: transparent;")
         if hasattr(self, "lbl_samples_hint"):
-            self.lbl_samples_hint.setStyleSheet("color: #94a3b8; font-size: 11px; background: transparent;" if is_dark else "color: #64748b; font-size: 11px; background: transparent;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_samples_hint, "color: #94a3b8; font-size: 11px; background: transparent;" if is_dark else "color: #64748b; font-size: 11px; background: transparent;")
         if hasattr(self, "lbl_conf_val"):
-            self.lbl_conf_val.setStyleSheet("font-size: 11px; font-weight: 600; color: #a1a1aa; background: transparent;" if is_dark else "font-size: 11px; font-weight: 600; color: #475569; background: transparent;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_conf_val, "font-size: 11px; font-weight: 600; color: #a1a1aa; background: transparent;" if is_dark else "font-size: 11px; font-weight: 600; color: #475569; background: transparent;")
         if hasattr(self, "lbl_iou_val"):
-            self.lbl_iou_val.setStyleSheet("font-size: 11px; font-weight: 600; color: #a1a1aa; background: transparent;" if is_dark else "font-size: 11px; font-weight: 600; color: #475569; background: transparent;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_iou_val, "font-size: 11px; font-weight: 600; color: #a1a1aa; background: transparent;" if is_dark else "font-size: 11px; font-weight: 600; color: #475569; background: transparent;")
         if hasattr(self, "lbl_sz"):
-            self.lbl_sz.setStyleSheet("font-size: 11px; font-weight: 600; color: #a1a1aa; background: transparent;" if is_dark else "font-size: 11px; font-weight: 600; color: #475569; background: transparent;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_sz, "font-size: 11px; font-weight: 600; color: #a1a1aa; background: transparent;" if is_dark else "font-size: 11px; font-weight: 600; color: #475569; background: transparent;")
         if hasattr(self, "combo_imgsz"):
-            self.combo_imgsz.setStyleSheet(f"""
+            _MkThemeEngine.apply_style_sheet(self.combo_imgsz, f"""
                 QComboBox {{
                     background: {'#1e293b' if is_dark else '#ffffff'};
                     color: {'#f1f5f9' if is_dark else '#111827'};
@@ -2263,7 +2269,7 @@ class ExperimentDetailView(MkPage):
                 }}
             """)
         if hasattr(self, "_sliders_card"):
-            self._sliders_card.setStyleSheet(f"""
+            _MkThemeEngine.apply_style_sheet(self._sliders_card, f"""
                 QFrame#SlidersCard {{
                     background: {'#18181b' if is_dark else '#f8fafc'};
                     border: 1px solid {'#27272a' if is_dark else '#e2e8f0'};
@@ -2272,7 +2278,7 @@ class ExperimentDetailView(MkPage):
                 }}
             """)
         if hasattr(self, "_result_card"):
-            self._result_card.setStyleSheet(f"""
+            _MkThemeEngine.apply_style_sheet(self._result_card, f"""
                 QFrame#ResultCard {{
                     background: {'#18181b' if is_dark else '#ffffff'};
                     border: 1px solid {'#27272a' if is_dark else '#e5e7eb'};
@@ -2280,24 +2286,24 @@ class ExperimentDetailView(MkPage):
                 }}
             """)
         if hasattr(self, "_lbl_result_title"):
-            self._lbl_result_title.setStyleSheet(f"color: {'#f1f5f9' if is_dark else '#111827'}; background: transparent;")
+            _MkThemeEngine.apply_style_sheet(self._lbl_result_title, f"color: {'#f1f5f9' if is_dark else '#111827'}; background: transparent;")
         if hasattr(self, "_lbl_total_ms"):
-            self._lbl_total_ms.setStyleSheet(f"""
+            _MkThemeEngine.apply_style_sheet(self._lbl_total_ms, f"""
                 color: {'#d4d4d8' if is_dark else '#374151'};
                 background: {'#27272a' if is_dark else '#f3f4f6'};
                 border-radius: 8px;
                 padding: 3px 10px;
             """)
         if hasattr(self, "_lbl_det_subtitle"):
-            self._lbl_det_subtitle.setStyleSheet(f"color: {'#9ca3af' if is_dark else '#6b7280'}; margin-top: 4px; margin-bottom: 14px; background: transparent;")
+            _MkThemeEngine.apply_style_sheet(self._lbl_det_subtitle, f"color: {'#9ca3af' if is_dark else '#6b7280'}; margin-top: 4px; margin-bottom: 14px; background: transparent;")
         if hasattr(self, "_lbl_det_section"):
-            self._lbl_det_section.setStyleSheet(f"color: {'#d4d4d8' if is_dark else '#374151'}; margin-top: 18px; margin-bottom: 8px; background: transparent;")
+            _MkThemeEngine.apply_style_sheet(self._lbl_det_section, f"color: {'#d4d4d8' if is_dark else '#374151'}; margin-top: 18px; margin-bottom: 8px; background: transparent;")
         if hasattr(self, "_speed_boxes"):
             for key, val_lbl in self._speed_boxes.items():
                 box = val_lbl.parent()
                 if box and isinstance(box, QFrame):
-                    box.setStyleSheet(f"QFrame {{ background: {'#27272a' if is_dark else '#f3f4f6'}; border-radius: 8px; border: none; }}")
-                val_lbl.setStyleSheet(f"color: {'#f1f5f9' if is_dark else '#111827'}; background: transparent;")
+                    _MkThemeEngine.apply_style_sheet(box, f"QFrame {{ background: {'#27272a' if is_dark else '#f3f4f6'}; border-radius: 8px; border: none; }}")
+                _MkThemeEngine.apply_style_sheet(val_lbl, f"color: {'#f1f5f9' if is_dark else '#111827'}; background: transparent;")
 
         if hasattr(self, "_dropzone") and hasattr(self._dropzone, "set_theme"):
             self._dropzone.set_theme(is_dark)

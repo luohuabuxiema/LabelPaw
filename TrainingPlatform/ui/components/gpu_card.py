@@ -3,6 +3,7 @@
 GPU Status Card Component for AI Vision Training Platform
 Using MonkeyQt MkCard, MkProgressBar
 """
+from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel
 from PySide6.QtCore import Qt, QTimer
 
@@ -19,16 +20,16 @@ class GPUCard(MkQWidget):
         card_layout = self.card.content_layout
 
         self.lbl_gpu_name = QLabel("GPU 状态: 正在检测中...")
-        self.lbl_gpu_name.setStyleSheet("font-size: 14px; font-weight: bold; color: #303133;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_gpu_name, "font-size: 14px; font-weight: bold; color: #303133;")
 
         self.lbl_vram_info = QLabel("显存使用: 0.0 GB / 0.0 GB")
-        self.lbl_vram_info.setStyleSheet("font-size: 12px; color: #606266;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_vram_info, "font-size: 12px; color: #606266;")
 
         self.progress_vram = MkProgressBar()
         self.progress_vram.percentage = 0
 
         self.lbl_cuda_info = QLabel("CUDA 状态: 检测中...")
-        self.lbl_cuda_info.setStyleSheet("font-size: 12px; color: #909399;")
+        _MkThemeEngine.apply_style_sheet(self.lbl_cuda_info, "font-size: 12px; color: #909399;")
 
         card_layout.addWidget(self.lbl_gpu_name)
         card_layout.addWidget(self.lbl_vram_info)
@@ -49,11 +50,11 @@ class GPUCard(MkQWidget):
     def apply_theme(self, *args):
         is_dark = ThemeEngine.is_dark()
         if is_dark:
-            self.lbl_vram_info.setStyleSheet("font-size: 12px; color: #cbd5e1;")
-            self.lbl_cuda_info.setStyleSheet("font-size: 12px; color: #94a3b8;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_vram_info, "font-size: 12px; color: #cbd5e1;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_cuda_info, "font-size: 12px; color: #94a3b8;")
         else:
-            self.lbl_vram_info.setStyleSheet("font-size: 12px; color: #475569;")
-            self.lbl_cuda_info.setStyleSheet("font-size: 12px; color: #64748b;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_vram_info, "font-size: 12px; color: #475569;")
+            _MkThemeEngine.apply_style_sheet(self.lbl_cuda_info, "font-size: 12px; color: #64748b;")
 
     def refresh_gpu_status(self):
         info = GPUMonitor.get_gpu_info()
@@ -61,7 +62,7 @@ class GPUCard(MkQWidget):
         if not info["cuda_available"] or not info["devices"]:
             warn_color = "#fbbf24" if is_dark else "#d97706"
             self.lbl_gpu_name.setText("未检测到可用 NVIDIA GPU (CUDA 未开启)")
-            self.lbl_gpu_name.setStyleSheet(f"font-size: 14px; font-weight: bold; color: {warn_color};")
+            _MkThemeEngine.apply_style_sheet(self.lbl_gpu_name, f"font-size: 14px; font-weight: bold; color: {warn_color};")
             self.lbl_vram_info.setText("建议使用 CPU 模式进行小规模测试")
             self.progress_vram.percentage = 0
             self.lbl_cuda_info.setText("CUDA 可用性: False")
@@ -74,7 +75,7 @@ class GPUCard(MkQWidget):
 
             success_color = "#4ade80" if is_dark else "#16a34a"
             self.lbl_gpu_name.setText(f"GPU: {name}")
-            self.lbl_gpu_name.setStyleSheet(f"font-size: 14px; font-weight: bold; color: {success_color};")
+            _MkThemeEngine.apply_style_sheet(self.lbl_gpu_name, f"font-size: 14px; font-weight: bold; color: {success_color};")
             self.lbl_vram_info.setText(f"显存: {used:.2f} GB / {total:.2f} GB ({percent}%)")
             self.progress_vram.percentage = percent
             self.lbl_cuda_info.setText(f"CUDA 版本: {info['cuda_version']} | 设备数: {info['device_count']}")
