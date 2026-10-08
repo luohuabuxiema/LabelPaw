@@ -12,3 +12,6 @@ ultralytics/
 __pycache__/
 
 yolotest/
+runs/
+scratch/
+weights/
