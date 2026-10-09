@@ -36,9 +36,10 @@ from monkeyqt_icons import (PhArrowsOutSimple, PhDownloadSimple, PhX, PhChartLin
 
 # Modern publication colors matching Ultralytics / Tailwind / Academic papers
 ACADEMIC_COLORS = [
+    "#ef4444",  # Crimson Red (matching Figure 1)
     "#2563eb",  # Vibrant Ultralytics Blue
-    "#f97316",  # Warm Orange / Terracotta
     "#10b981",  # Emerald Green
+    "#f97316",  # Warm Orange / Terracotta
     "#8b5cf6",  # Purple Violet
     "#ec4899",  # Modern Rose Pink
     "#06b6d4",  # Cyan Teal
@@ -71,8 +72,8 @@ class ChartHoverTooltip(QFrame):
         self.set_theme(False)
 
     def set_theme(self, is_dark: bool):
-        bg = "#1e1e2e" if is_dark else "#ffffff"
-        border = "#313244" if is_dark else "#e2e8f0"
+        bg = "#18181b" if is_dark else "#ffffff"
+        border = "#27272a" if is_dark else "#e2e8f0"
         _MkThemeEngine.apply_style_sheet(self, f"""
             QFrame#ChartHoverTooltip {{
                 background-color: {bg};
@@ -157,12 +158,12 @@ class ThesisChartCanvas(FigureCanvas):
 
     def _update_color_scheme(self, is_dark: bool):
         self.is_dark = is_dark
-        self.bg_color = "#181825" if is_dark else "#ffffff"
-        self.text_color = "#cdd6f4" if is_dark else "#0f172a"
-        self.muted_text = "#6c7086" if is_dark else "#64748b"
-        self.spine_color = "#313244" if is_dark else "#e2e8f0"
-        self.grid_color = "#27272a" if is_dark else "#f1f5f9"
-        self.crosshair_color = "#45475a" if is_dark else "#cbd5e1"
+        self.bg_color = "#171717" if is_dark else "#ffffff"
+        self.text_color = "#f4f4f5" if is_dark else "#0f172a"
+        self.muted_text = "#a1a1aa" if is_dark else "#64748b"
+        self.spine_color = "#27272a" if is_dark else "#e2e8f0"
+        self.grid_color = "#222225" if is_dark else "#f1f5f9"
+        self.crosshair_color = "#3f3f46" if is_dark else "#cbd5e1"
 
     def _update_layout_for_size(self):
         """Dynamically adapt tick padding, label font sizes, and figure margins based on canvas height so x-axis & Epoch are never clipped."""
@@ -533,9 +534,9 @@ class FullscreenChartDialog(QDialog):
         self.resize(1060, 680)
         self.setWindowFlags(self.windowFlags() | Qt.WindowMaximizeButtonHint)
 
-        bg = "#181825" if is_dark else "#ffffff"
-        fg = "#cdd6f4" if is_dark else "#09090b"
-        border = "#313244" if is_dark else "#e2e8f0"
+        bg = "#171717" if is_dark else "#ffffff"
+        fg = "#f4f4f5" if is_dark else "#09090b"
+        border = "#27272a" if is_dark else "#e2e8f0"
         _MkThemeEngine.apply_style_sheet(self, f"background-color: {bg}; color: {fg};")
 
         layout = QVBoxLayout(self)
@@ -686,7 +687,7 @@ class ThesisChartCard(MkQWidget):
 
     def _apply_card_style(self):
         if hasattr(self, "lbl_title"):
-            fg = "#cdd6f4" if self.is_dark else "#0f172a"
+            fg = "#f4f4f5" if self.is_dark else "#0f172a"
             _MkThemeEngine.apply_style_sheet(self.lbl_title, f"color: {fg}; background: transparent;")
 
 

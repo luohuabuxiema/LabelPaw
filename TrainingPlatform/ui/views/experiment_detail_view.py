@@ -31,7 +31,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
 from PySide6.QtCore import Qt, Signal, Slot, QThread, QSize, QTimer, QRectF
 from PySide6.QtGui import QFont, QColor, QPixmap, QImage, QTextCursor, QTextCharFormat
 
-from monkeyqt import (MkCard, MkButton, MkInput, MkConsole, MkMessage, MkQWidget, SegmentedTabBar, ThemeEngine, MkProTable, MkPage, MkStackedWidget)
+from monkeyqt import (MkCard, MkButton, MkInput, MkConsole, MkMessage, MkQWidget, SegmentedTabBar, ThemeEngine, MkProTable, MkPage, MkStackedWidget, MkSlider)
 from monkeyqt_icons import (PhArrowLeft, PhPlay, PhDownloadSimple, PhFolder,
                             PhCopy, PhCheck, PhFileText, PhSliders, PhSparkle,
                             PhCpu, PhTerminalWindow, PhChartLine, PhMagnifyingGlass, PhLayout)
@@ -1147,40 +1147,30 @@ class ExperimentDetailView(MkPage):
         v_conf.setSpacing(3)
         self.lbl_conf_val = QLabel("置信度 (Confidence)")
         _MkThemeEngine.apply_style_sheet(self.lbl_conf_val, "font-size: 11px; font-weight: 600; color: #475569;")
-        self.slider_conf = QSlider(Qt.Orientation.Horizontal)
+        self.slider_conf = MkSlider(Qt.Orientation.Horizontal)
         self.slider_conf.setRange(5, 95)
         self.slider_conf.setValue(25)
-        self._lbl_conf_num = QLabel("0.25")
-        _MkThemeEngine.apply_style_sheet(self._lbl_conf_num, "font-size: 11px; color: #2563eb; font-weight: 700;")
-        self._lbl_conf_num.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        self.slider_conf.valueChanged.connect(
-            lambda v: self._lbl_conf_num.setText(f"{v / 100.0:.2f}")
-        )
+        self.slider_conf.set_formatter(lambda v: f"{v / 100.0:.2f}")
         self.slider_conf.sliderReleased.connect(self._on_param_changed)
+        self._lbl_conf_num = self.slider_conf.value_label
         v_conf.addWidget(self.lbl_conf_val)
         v_conf.addWidget(self.slider_conf)
-        v_conf.addWidget(self._lbl_conf_num)
-        sl_layout.addLayout(v_conf)
+        sl_layout.addLayout(v_conf, stretch=1)
 
         # IoU slider
         v_iou = QVBoxLayout()
         v_iou.setSpacing(3)
         self.lbl_iou_val = QLabel("交并比 (IoU)")
         _MkThemeEngine.apply_style_sheet(self.lbl_iou_val, "font-size: 11px; font-weight: 600; color: #475569;")
-        self.slider_iou = QSlider(Qt.Orientation.Horizontal)
+        self.slider_iou = MkSlider(Qt.Orientation.Horizontal)
         self.slider_iou.setRange(10, 95)
         self.slider_iou.setValue(70)
-        self._lbl_iou_num = QLabel("0.70")
-        _MkThemeEngine.apply_style_sheet(self._lbl_iou_num, "font-size: 11px; color: #2563eb; font-weight: 700;")
-        self._lbl_iou_num.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        self.slider_iou.valueChanged.connect(
-            lambda v: self._lbl_iou_num.setText(f"{v / 100.0:.2f}")
-        )
+        self.slider_iou.set_formatter(lambda v: f"{v / 100.0:.2f}")
         self.slider_iou.sliderReleased.connect(self._on_param_changed)
+        self._lbl_iou_num = self.slider_iou.value_label
         v_iou.addWidget(self.lbl_iou_val)
         v_iou.addWidget(self.slider_iou)
-        v_iou.addWidget(self._lbl_iou_num)
-        sl_layout.addLayout(v_iou)
+        sl_layout.addLayout(v_iou, stretch=1)
 
         # Image size combo
         v_sz = QVBoxLayout()
@@ -2268,6 +2258,10 @@ class ExperimentDetailView(MkPage):
                     padding: 4px 8px;
                 }}
             """)
+        if hasattr(self, "slider_conf") and hasattr(self.slider_conf, "set_theme_style"):
+            self.slider_conf.set_theme_style()
+        if hasattr(self, "slider_iou") and hasattr(self.slider_iou, "set_theme_style"):
+            self.slider_iou.set_theme_style()
         if hasattr(self, "_sliders_card"):
             _MkThemeEngine.apply_style_sheet(self._sliders_card, f"""
                 QFrame#SlidersCard {{
