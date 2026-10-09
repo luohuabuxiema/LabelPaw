@@ -832,10 +832,10 @@ class Ui_MainWindow(object):
         # ==========================================
         self.toolBar.addSeparator()
 
-        self.btnDatasetTool = QPushButton(self.set_icon_color(QIcon("ui/icon/wrench.svg"), _ic), " AI 训练与数据集平台")
+        self.btnDatasetTool = QPushButton(self.set_icon_color(QIcon("ui/icon/wrench.svg"), _ic), "一键训练平台")
         self.btnDatasetTool.setCursor(Qt.PointingHandCursor)
         self.btnDatasetTool.setObjectName("btnDatasetTool")
-        self.btnDatasetTool.setToolTip("AI 训练与数据集平台")
+        self.btnDatasetTool.setToolTip("一键训练平台")
         self.btnDatasetTool.setIconSize(QSize(24, 24))
         self.btnDatasetTool.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.toolBar.addWidget(self.btnDatasetTool)

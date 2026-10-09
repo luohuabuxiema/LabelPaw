@@ -2106,7 +2106,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 btn.setMinimumWidth(180)
 
             self.formatWidget.set_icon_only(False)
-            self.btnDatasetTool.setText(" AI 训练与数据集平台")
+            self.btnDatasetTool.setText("一键训练平台")
             self.samIcon.show() # 展开时显示左侧图标
             # SAM 开关横向显示
             self.samSwitch.setFixedSize(50, 26)
