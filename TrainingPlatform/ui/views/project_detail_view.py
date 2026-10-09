@@ -95,20 +95,20 @@ class ProjectDetailView(MkQWidget):
 
         # Right Action Buttons
         self.btn_new_train = MkButton("新建训练任务", btn_type="primary")
-        self.btn_new_train.setIcon(PhPlus.bold(size=15))
+        self.btn_new_train.setIcon(PhPlus.bold(size=18))
         _MkThemeEngine.apply_style_sheet(self.btn_new_train, "font-weight: bold; padding: 8px 16px;")
         self.btn_new_train.clicked.connect(self.open_train_dialog)
         h_layout.addWidget(self.btn_new_train)
 
         self.btn_refresh = MkButton("", btn_type="default")
-        self.btn_refresh.setIcon(PhArrowClockwise.regular(size=16))
+        self.btn_refresh.setIcon(PhArrowClockwise.regular(size=18))
         self.btn_refresh.setToolTip("刷新项目状态")
         self.btn_refresh.setFixedSize(36, 36)
         self.btn_refresh.clicked.connect(lambda: self.load_project(self.project_id))
         h_layout.addWidget(self.btn_refresh)
 
         self.btn_delete_proj = MkButton("", btn_type="default")
-        self.btn_delete_proj.setIcon(PhTrash.regular(size=16))
+        self.btn_delete_proj.setIcon(PhTrash.regular(size=18))
         self.btn_delete_proj.setToolTip("删除项目")
         self.btn_delete_proj.setFixedSize(36, 36)
         self.btn_delete_proj.clicked.connect(self.handle_delete_project)
