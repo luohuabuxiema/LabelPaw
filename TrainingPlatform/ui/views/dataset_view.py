@@ -152,7 +152,8 @@ class ImportDatasetDialog(QDialog):
     def browse_zip(self):
         zip_f, _ = QFileDialog.getOpenFileName(self, "选择数据集 Zip 压缩包", "", "Zip Archives (*.zip)")
         if zip_f:
-            target_dir = os.path.join(os.path.expanduser("~"), ".ai_vision_platform", "datasets",
+            from TrainingPlatform.core.env_manager import get_workspace_root
+            target_dir = os.path.join(get_workspace_root(), "datasets",
                                       os.path.splitext(os.path.basename(zip_f))[0])
             try:
                 DatasetInspector.extract_zip(zip_f, target_dir)

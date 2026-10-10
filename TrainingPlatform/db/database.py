@@ -11,9 +11,20 @@ from datetime import datetime
 class DatabaseManager:
     def __init__(self, db_path=None):
         if db_path is None:
-            data_dir = os.path.join(os.path.expanduser("~"), ".ai_vision_platform")
+            from TrainingPlatform.core.env_manager import get_workspace_root
+            workspace = get_workspace_root()
+            data_dir = os.path.join(workspace, "runs")
             os.makedirs(data_dir, exist_ok=True)
             db_path = os.path.join(data_dir, "platform.db")
+
+            # 兼容性迁移：若 runs/platform.db 尚不存在，但旧的 ~/.ai_vision_platform/platform.db 存在，自动平滑迁移
+            old_db = os.path.join(os.path.expanduser("~"), ".ai_vision_platform", "platform.db")
+            if not os.path.exists(db_path) and os.path.exists(old_db):
+                try:
+                    import shutil
+                    shutil.copy2(old_db, db_path)
+                except Exception:
+                    pass
         self.db_path = db_path
         self._init_db()
 

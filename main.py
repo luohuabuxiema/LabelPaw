@@ -1,5 +1,21 @@
 import sys
 import os
+
+# ============================================================
+# PyInstaller 打包运行环境资源路径适配
+# ============================================================
+if getattr(sys, 'frozen', False):
+    # PyInstaller 6+ 默认将所有数据文件 (--add-data) 存放在 _internal 目录 (即 sys._MEIPASS)
+    # 而可执行文件启动时的默认工作目录是 dist/LabelPaw，导致相对路径 "ui/icon/..." 无法读取。
+    # 切换工作目录至 _internal，使所有的 "ui/icon/..."、"labelpaw/config/..." 相对路径完美命中。
+    base_dir = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+    os.chdir(base_dir)
+    try:
+        from PySide6.QtCore import QDir
+        QDir.setCurrent(base_dir)
+    except Exception:
+        pass
+
 import json
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QInputDialog, QMessageBox, QLabel, \
     QListWidgetItem, QDialog, QMenu, QAbstractItemView, QProgressBar, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit, \
@@ -1901,8 +1917,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         try:
             if not hasattr(self, 'dataset_window') or self.dataset_window is None:
                 self.dataset_window = TrainingPlatformWindow()
-            # 显示窗口
-            self.dataset_window.show()
+            # 默认最大化显示窗口
+            self.dataset_window.showMaximized()
             # 把窗口强制拉到最前面
             self.dataset_window.raise_()
             self.dataset_window.activateWindow()

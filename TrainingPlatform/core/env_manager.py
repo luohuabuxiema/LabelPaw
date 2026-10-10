@@ -16,14 +16,16 @@ from PySide6.QtCore import QObject, Signal, QThread
 
 def get_workspace_root() -> str:
     """Return the root directory of LabelPaw workspace."""
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
     cur_dir = os.path.dirname(os.path.abspath(__file__))
     # cur_dir is TrainingPlatform/core -> workspace root is ../..
     return os.path.abspath(os.path.join(cur_dir, "..", ".."))
 
 
 def get_platform_data_dir() -> str:
-    """Return user data directory for persistent configs."""
-    data_dir = os.path.join(os.path.expanduser("~"), ".ai_vision_platform")
+    """Return workspace runs directory for persistent configs (portable)."""
+    data_dir = os.path.join(get_workspace_root(), "runs")
     os.makedirs(data_dir, exist_ok=True)
     return data_dir
 
