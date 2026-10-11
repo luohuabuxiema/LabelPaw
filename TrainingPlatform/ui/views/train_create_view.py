@@ -5,11 +5,11 @@ Using MonkeyQt MkForm, MkInput, MkComboBox, MkSlider, MkButton
 """
 from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-                               QScrollArea, QMessageBox)
+                               QScrollArea)
 from PySide6.QtCore import Signal, Qt
 
 from monkeyqt import (MkCard, MkButton, MkInput, MkComboBox,
-                      MkForm, MkSlider, MkSwitch, MkAlert, MkQWidget)
+                      MkForm, MkSlider, MkSwitch, MkAlert, MkQWidget, MkMessageBox)
 from monkeyqt_icons import PhPlay
 from TrainingPlatform.ui.components.env_selector import RoundedComboBox
 
@@ -167,13 +167,13 @@ class TrainCreateView(MkQWidget):
     def start_training(self):
         task_name = self.input_task_name.text().strip()
         if not task_name:
-            QMessageBox.warning(self, "警告", "请输入训练任务名称！")
+            MkMessageBox.warning(self, "警告", "请输入训练任务名称！", cancel_text=None)
             return
 
         pid_idx = self.combo_project.currentIndex()
         did_idx = self.combo_dataset.currentIndex()
         if pid_idx < 0 or did_idx < 0:
-            QMessageBox.warning(self, "警告", "请先选择有效的训练项目与数据集！")
+            MkMessageBox.warning(self, "警告", "请先选择有效的训练项目与数据集！", cancel_text=None)
             return
 
         project_id = self.combo_project.itemData(pid_idx)
@@ -190,7 +190,7 @@ class TrainCreateView(MkQWidget):
             workers = int(self.input_workers.text().strip())
             patience = int(self.input_patience.text().strip())
         except ValueError as e:
-            QMessageBox.critical(self, "错误", f"参数格式不正确，请确保数值合法: {str(e)}")
+            MkMessageBox.error(self, "错误", f"参数格式不正确，请确保数值合法: {str(e)}")
             return
 
         config_dict = {
@@ -219,7 +219,7 @@ class TrainCreateView(MkQWidget):
         # Start via TaskManager
         success, msg = self.task_mgr.start_task(task_id)
         if success:
-            QMessageBox.information(self, "已启动", f"训练任务 [{task_name}] 已成功添加到训练队列并开始执行！")
+            MkMessageBox.success(self, "已启动", f"训练任务 [{task_name}] 已成功添加到训练队列并开始执行！")
             self.task_created.emit(task_id)
         else:
-            QMessageBox.critical(self, "启动失败", msg)
+            MkMessageBox.error(self, "启动失败", msg)

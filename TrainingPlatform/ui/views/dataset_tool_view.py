@@ -9,11 +9,11 @@ Provides 4 key dataset processing sub-tools:
 """
 from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-                               QFileDialog, QTextEdit, QMessageBox)
+                               QFileDialog, QTextEdit)
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtGui import QTextCursor
 
-from monkeyqt import MkCard, MkButton, MkInput, MkComboBox, MkForm, MkAlert, ThemeEngine, MkQWidget
+from monkeyqt import MkCard, MkButton, MkInput, MkComboBox, MkForm, MkAlert, ThemeEngine, MkQWidget, MkMessageBox
 from monkeyqt_icons import PhScales, PhPlay
 from TrainingPlatform.core.dataset_worker import DatasetWorker, RatioDialog
 
@@ -155,7 +155,7 @@ class DatasetToolView(MkQWidget):
         out_dir = self.input_out_dir.text().strip()
 
         if not img_dir or not out_dir:
-            QMessageBox.warning(self, "未完成", "请先选择有效的图片目录和输出存放目录！")
+            MkMessageBox.warning(self, "未完成", "请先选择有效的图片目录和输出存放目录！", cancel_text=None)
             return
 
         mode_raw = self.combo_mode.currentText().split()[0]
@@ -173,6 +173,6 @@ class DatasetToolView(MkQWidget):
         self.btn_start.setEnabled(True)
         self.btn_start.setText("开始执行转换与数据集划分")
         if success:
-            QMessageBox.information(self, "完成", msg)
+            MkMessageBox.success(self, "完成", msg)
         else:
-            QMessageBox.critical(self, "错误", msg)
+            MkMessageBox.error(self, "错误", msg)

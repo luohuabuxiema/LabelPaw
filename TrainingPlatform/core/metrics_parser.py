@@ -11,7 +11,7 @@ import csv
 from typing import Dict
 
 
-def parse_final_experiment_metrics(save_dir: str) -> Dict[str, float]:
+def parse_final_experiment_metrics(save_dir: str, task_type=None) -> Dict[str, float]:
     """
     Extract the final model validation metrics (all classes mean) from train.log or results.csv.
     Returns a dict with:
@@ -28,6 +28,13 @@ def parse_final_experiment_metrics(save_dir: str) -> Dict[str, float]:
     }
     if not save_dir or not os.path.isdir(save_dir):
         return res
+    if task_type is None:
+        try:
+            import yaml
+            with open(os.path.join(save_dir, "args.yaml"), encoding="utf-8") as source:
+                task_type = (yaml.safe_load(source) or {}).get("task")
+        except Exception:
+            pass
 
     # 1. Primary Source: train.log final validation block on best.pt
     # Ultralytics prints:
@@ -48,10 +55,13 @@ def parse_final_experiment_metrics(save_dir: str) -> Dict[str, float]:
 
             # Look for the 'all' row which gives the mean across all classes
             # Pattern matches: all <images> <instances> <P> <R> <mAP50> <mAP50-95>
-            pattern = r'^\s*all\s+\d+\s+\d+\s+([\d\.]+)\s+([\d\.]+)\s+([\d\.]+)\s+([\d\.]+)'
+            pattern = r'^\s*all\s+\d+\s+\d+\s+([^\r\n]+)'
             matches = re.findall(pattern, search_text, re.MULTILINE)
             if matches:
-                p, r, m50, m95 = matches[-1]
+                values = [float(value) for value in matches[-1].split()]
+                secondary = task_type in ("segment", "pose") or (task_type is None and "Mask(" in search_text)
+                offset = 4 if secondary and len(values) >= 8 else 0
+                p, r, m50, m95 = values[offset:offset + 4]
                 res["precision"] = round(float(p), 4)
                 res["recall"] = round(float(r), 4)
                 res["map50"] = round(float(m50), 4)
@@ -67,11 +77,14 @@ def parse_final_experiment_metrics(save_dir: str) -> Dict[str, float]:
             with open(csv_p, "r", encoding="utf-8", errors="ignore") as f:
                 reader = list(csv.DictReader(f))
             if reader:
-                last = reader[-1]
-                v50 = last.get("metrics/mAP50(B)") or last.get("metrics/mAP50(M)") or last.get("metrics/mAP50")
-                v95 = last.get("metrics/mAP50-95(B)") or last.get("metrics/mAP50-95(M)") or last.get("metrics/mAP50-95")
-                vp = last.get("metrics/precision(B)") or last.get("metrics/precision(M)")
-                vr = last.get("metrics/recall(B)") or last.get("metrics/recall(M)")
+                last = {key.strip(): value for key, value in reader[-1].items() if key}
+                suffix = {"segment": "M", "pose": "P"}.get(task_type, "B")
+                if task_type is None and "metrics/mAP50(M)" in last:
+                    suffix = "M"
+                v50 = last.get(f"metrics/mAP50({suffix})") or last.get("metrics/mAP50")
+                v95 = last.get(f"metrics/mAP50-95({suffix})") or last.get("metrics/mAP50-95")
+                vp = last.get(f"metrics/precision({suffix})")
+                vr = last.get(f"metrics/recall({suffix})")
                 if v50:
                     res["map50"] = round(float(v50), 4)
                 if v95:

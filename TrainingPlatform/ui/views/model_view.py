@@ -8,12 +8,12 @@ import os
 import subprocess
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                QTableWidget, QTableWidgetItem, QHeaderView,
-                               QDialog, QMessageBox, QFrame, QPushButton,
+                               QDialog, QFrame, QPushButton,
                                QGraphicsDropShadowEffect)
 from PySide6.QtGui import QColor
 from PySide6.QtCore import Qt, Signal, QPoint
 
-from monkeyqt import MkCard, MkButton, MkComboBox, MkForm, MkSwitch, MkAlert, MkQWidget
+from monkeyqt import MkCard, MkButton, MkComboBox, MkForm, MkSwitch, MkAlert, MkQWidget, MkMessageBox
 from monkeyqt_icons import PhX
 
 class ExportModelDialog(QDialog):
@@ -209,7 +209,7 @@ class ModelView(MkQWidget):
 
     def open_file_dir(self, file_path):
         if not file_path or not os.path.exists(file_path):
-            QMessageBox.warning(self, "路径错误", f"找不到指定的文件: {file_path}")
+            MkMessageBox.warning(self, "路径错误", f"找不到指定的文件: {file_path}", cancel_text=None)
             return
         folder = os.path.dirname(file_path)
         if os.name == 'nt':
@@ -220,7 +220,7 @@ class ModelView(MkQWidget):
     def export_model(self, model_info):
         best_pt = model_info.get("best_pt_path", "")
         if not os.path.exists(best_pt):
-            QMessageBox.critical(self, "错误", f"未找到最佳模型文件 best.pt:\n{best_pt}")
+            MkMessageBox.error(self, "错误", f"未找到最佳模型文件 best.pt:<br>{best_pt}")
             return
 
         dlg = ExportModelDialog(model_info, self)
@@ -230,15 +230,13 @@ class ModelView(MkQWidget):
             try:
                 from ultralytics import YOLO
                 m = YOLO(best_pt)
-                QMessageBox.information(self, "导出中", f"正在后台导出为 {fmt} 格式，请稍等系统执行处理...")
+                MkMessageBox.info(self, "导出中", f"正在后台导出为 {fmt} 格式，请稍等系统执行处理...")
                 exported_path = m.export(format=fmt, dynamic=args["dynamic"], half=args["half"])
-                QMessageBox.information(self, "导出成功", f"模型成功导出至:\n{exported_path}")
+                MkMessageBox.success(self, "导出成功", f"模型成功导出至:<br>{exported_path}")
             except Exception as e:
-                QMessageBox.critical(self, "导出失败", f"模型转码导出过程发生错误:\n{str(e)}")
+                MkMessageBox.error(self, "导出失败", f"模型转码导出过程发生错误:<br>{str(e)}")
 
     def delete_model(self, model_id):
-        reply = QMessageBox.question(self, "确认删除", "确定要删除该模型记录吗？",
-                                     QMessageBox.Yes | QMessageBox.No)
-        if reply == QMessageBox.Yes:
+        if MkMessageBox.confirm(self, "确认删除", "确定要删除该模型记录吗？", danger=True, ok_text="删除", cancel_text="取消"):
             self.db.delete_model(model_id)
             self.refresh_models()

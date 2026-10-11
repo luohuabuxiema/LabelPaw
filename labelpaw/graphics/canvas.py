@@ -172,7 +172,8 @@ class Canvas(QGraphicsScene):
 
         # ---------------- SAM 智能辅助悬停 ----------------
         # 将 RBOX 加入 SAM 支持的模式列表
-        is_sam_model = getattr(self.sam_client, 'current_model_key', '').startswith('sam')
+        current_model_key = getattr(self.sam_client, 'current_model_key', None) or ''
+        is_sam_model = current_model_key.startswith('sam')
         if self.sam_enabled and is_sam_model and self.is_inside_image(pt) and self.mode in [CanvasMode.RECT, CanvasMode.POLY,
                                                                            CanvasMode.RBOX]:
             # 检查鼠标是否在已标注的非临时区域内部，如果是，则跳过 SAM 智能预选推理以提升性能并防止视觉遮挡
@@ -283,7 +284,8 @@ class Canvas(QGraphicsScene):
         pt = event.scenePos()
         clamped_pt = self.clamp_point(pt)
         
-        is_yolo = getattr(self.sam_client, 'current_model_key', '').startswith('yolo')
+        current_model_key = getattr(self.sam_client, 'current_model_key', None) or ''
+        is_yolo = current_model_key.startswith('yolo')
 
         # 1. 优先检测是否点击在已有的图形或者手柄上，如果是，则直接进入编辑/选择状态
         clicked_item = None
@@ -418,7 +420,8 @@ class Canvas(QGraphicsScene):
                     if item.scene() == self:
                         item.setSelected(True)
 
-        is_sam_model = getattr(self.sam_client, 'current_model_key', '').startswith('sam')
+        current_model_key = getattr(self.sam_client, 'current_model_key', None) or ''
+        is_sam_model = current_model_key.startswith('sam')
         if self.sam_enabled and is_sam_model: return
 
         if event.button() == Qt.LeftButton and self.drawing:
@@ -463,7 +466,8 @@ class Canvas(QGraphicsScene):
                     self.shape_double_clicked.emit(parent)
                     return
 
-        is_sam_model = getattr(self.sam_client, 'current_model_key', '').startswith('sam')
+        current_model_key = getattr(self.sam_client, 'current_model_key', None) or ''
+        is_sam_model = current_model_key.startswith('sam')
         if event.button() == Qt.LeftButton and self.mode == CanvasMode.POLY and not (self.sam_enabled and is_sam_model) and len(
                 self.poly_pts) > 2:
             self.finish_poly_shape()

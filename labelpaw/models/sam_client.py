@@ -27,22 +27,9 @@ torch.backends.cudnn.allow_tf32 = True
 # ============== SAM Model Map ==============
 import sys
 
-# 设置一个更加通用的模型权重基准目录
-# 优先从当前项目根目录下的 weights 文件夹寻找，如果没有则回退到硬编码路径
-if getattr(sys, 'frozen', False):
-    PROJECT_ROOT = os.path.dirname(sys.executable)
-else:
-    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-LOCAL_WEIGHTS_DIR = os.path.join(PROJECT_ROOT, "weights")
-HARDCODED_DEV_DIR = r"E:\11-AI\标注工具\weights"
-
-if os.path.exists(LOCAL_WEIGHTS_DIR):
-    MODEL_BASE_DIR = LOCAL_WEIGHTS_DIR
-elif os.path.exists(HARDCODED_DEV_DIR):
-    MODEL_BASE_DIR = HARDCODED_DEV_DIR
-else:
-    MODEL_BASE_DIR = LOCAL_WEIGHTS_DIR  # 默认指向项目下的 weights
+# 统一获取模型权重基准目录（自动适配打包 exe 根目录/源码目录，支持自动创建）
+from labelpaw.config.paths import get_weights_base_dir
+MODEL_BASE_DIR = get_weights_base_dir()
 
 def get_sam_model_map():
     sam_weights_dir = os.path.join(MODEL_BASE_DIR, "sam_weights")

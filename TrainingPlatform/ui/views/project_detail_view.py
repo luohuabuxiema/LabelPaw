@@ -10,21 +10,18 @@ Benchmarked against Ultralytics Platform Project Dashboard:
 """
 from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 import os
+import csv
 from typing import Any
-try:
-    import pandas as pd
-except ImportError:
-    pd = None
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                QSplitter, QListWidget, QListWidgetItem,
-                               QMessageBox, QStackedWidget, QFrame, QToolButton,
+                               QStackedWidget, QFrame, QToolButton,
                                QCheckBox, QSizePolicy, QScrollArea)
 from PySide6.QtCore import Qt, Signal, Slot, QSize, QTimer
 from PySide6.QtGui import QTextCursor, QTextCharFormat, QColor, QFont
 
 from monkeyqt import (MkCard, MkButton, MkProgressBar, MkConsole, 
                       MkUpload, MkMessage, MkQWidget, ThemeEngine,
-                      MkSelectCard, MkSelectItem, MkItemActionButton)
+                      MkSelectCard, MkSelectItem, MkItemActionButton, MkComboBox, MkMessageBox)
 from monkeyqt_icons import (PhPlus, PhPlay, PhStop, PhExport, 
                             PhArrowClockwise, PhTrash, PhFolder, PhCaretRight)
 
@@ -34,6 +31,11 @@ from TrainingPlatform.ui.components.terminal_formatter import (apply_terminal_co
 from TrainingPlatform.ui.views.experiment_detail_view import ExperimentDetailView
 from TrainingPlatform.ui.views.dialogs.train_create_dialog import TrainCreateDialog
 from TrainingPlatform.ui.views.model_view import ExportModelDialog
+from TrainingPlatform.core.checkpoint_metadata import (
+    TASK_LABELS, config_dict, infer_task, metric_keys, normalize_history,
+    load_checkpoint_metadata, experiment_data, model_experiment, checkpoint_path,
+)
+from TrainingPlatform.ui.components.custom_tooltip import enable_component_tooltips
 
 
 class ProjectDetailView(MkQWidget):
@@ -48,6 +50,12 @@ class ProjectDetailView(MkQWidget):
         self.project_info = None
         self.current_task_id = None
         self.experiment_detail_view = None
+        self._records = {}
+        self._record_data = {}
+        self._load_generation = 0
+        self.checked_task_ids = None
+        self._group_headers = []
+        enable_component_tooltips(self)
 
         self._init_ui()
         self.apply_theme()
@@ -80,9 +88,6 @@ class ProjectDetailView(MkQWidget):
         _MkThemeEngine.apply_style_sheet(self.lbl_title, "font-size: 22px; font-weight: bold; color: #1e293b;")
         row_title.addWidget(self.lbl_title)
 
-        self.lbl_task_type = QLabel("detect")
-        _MkThemeEngine.apply_style_sheet(self.lbl_task_type, "background: #eff6ff; color: #2563eb; font-weight: bold; padding: 2px 8px; border-radius: 4px; font-size: 12px;")
-        row_title.addWidget(self.lbl_task_type)
         row_title.addStretch()
 
         v_info.addLayout(row_title)
@@ -260,7 +265,12 @@ class ProjectDetailView(MkQWidget):
 
         metrics_hdr.addStretch()
 
-        self.lbl_metrics_hint = QLabel("数据实时读取自 results.csv · 悬停可查看数值与准线 · 支持全屏")
+        self.metric_scope = MkComboBox()
+        for label, value in (("任务主指标", "auto"), ("检测框 (B)", "B"), ("分割掩膜 (M)", "M"), ("关键点 (P)", "P")):
+            self.metric_scope.addItem(label, value)
+        self.metric_scope.currentIndexChanged.connect(lambda _: self._update_comparison_charts())
+        metrics_hdr.addWidget(self.metric_scope)
+        self.lbl_metrics_hint = QLabel("模型内嵌训练历史 · 训练中实时更新 · 悬停查看数值")
         _MkThemeEngine.apply_style_sheet(self.lbl_metrics_hint, "color: #94a3b8; font-size: 11px;")
         metrics_hdr.addWidget(self.lbl_metrics_hint)
 
@@ -399,6 +409,15 @@ class ProjectDetailView(MkQWidget):
     def load_project(self, project_id, preserve_console=False, defer_heavy=False):
         if not project_id:
             return
+        if project_id != self.project_id:
+            self.checked_task_ids = None
+            self.current_task_id = None
+            self._preferred_record_id = None
+            self._record_data = {}
+            self.content_stack.setCurrentWidget(self.dashboard_widget)
+            self.main_layout.setContentsMargins(24, 20, 24, 20)
+            self.main_layout.setSpacing(16)
+        self._load_generation += 1
         self.project_id = project_id
         self.project_info = self.db.get_project_by_id(project_id)
         if not self.project_info:
@@ -406,14 +425,17 @@ class ProjectDetailView(MkQWidget):
 
         # 1. Update Header (即时同步，耗时 < 0.5ms)
         self.lbl_title.setText(self.project_info["name"])
-        self.lbl_task_type.setText(self.project_info["task_type"])
         summary = self.db.get_project_summary(project_id)
         desc = self.project_info.get("description") or "无描述"
         self.lbl_desc.setText(f"{desc} · 包含 {summary['task_count']} 个训练任务 · {summary['model_count']} 个产出模型")
 
         # 2. Check Tasks to Toggle Empty State vs Dashboard (即时同步，耗时 < 0.5ms)
         tasks = self.db.get_tasks(project_id=project_id)
-        if not tasks:
+        models = self.db.get_models(project_id=project_id)
+        task_ids = {t["id"] for t in tasks}
+        records = tasks + [model_experiment(m) for m in models if m.get("task_id") not in task_ids]
+        self._records = {t["id"]: t for t in records}
+        if not records:
             self.content_stack.setCurrentWidget(self.empty_widget)
             self.empty_upload.clear()
             self.header_card.setVisible(True)
@@ -422,9 +444,34 @@ class ProjectDetailView(MkQWidget):
                 self.content_stack.setCurrentWidget(self.dashboard_widget)
                 self.header_card.setVisible(True)
                 QTimer.singleShot(40, self._ensure_splitter_sizes)
-            self._render_task_list(tasks, preserve_console=preserve_console, defer_heavy=defer_heavy)
+            self._render_task_list(records, preserve_console=preserve_console, defer_heavy=defer_heavy)
             # Build the experiment inspector when it is opened, rather than
             # adding hundreds of hidden widgets to every theme update.
+            generation = self._load_generation
+            from TrainingPlatform.core.env_manager import EnvironmentManager
+            python_exe = EnvironmentManager.get_instance().get_selected_python()
+
+            def fetch():
+                data = {t["id"]: experiment_data(t, models, python_exe) for t in records}
+                for model in models:
+                    record_id = model.get("task_id") if model.get("task_id") in task_ids else -model["id"]
+                    parsed = data.get(record_id, {})
+                    if parsed.get("signature"):
+                        self.db.update_model_metadata(model["id"], parsed)
+                return data
+
+            def loaded(data):
+                if generation != self._load_generation or project_id != self.project_id:
+                    return
+                self._record_data = data
+                for record in records:
+                    record["_experiment_data"] = data.get(record["id"], {})
+                self._render_task_list(records, preserve_console=True)
+                errors = [d["error"] for d in data.values() if d.get("error")]
+                if errors:
+                    self.console.warning(errors[0])
+
+            self.run_async(fetch, on_success=loaded, auto_loading=False)
 
     def _warmup_experiment_detail_view(self):
         """Idle pre-warming: quietly instantiate ExperimentDetailView during idle event loop."""
@@ -458,7 +505,10 @@ class ProjectDetailView(MkQWidget):
         self.content_stack.setCurrentWidget(exp_view)
         exp_view.scroll_to_top()
         # 2. 详情页进入骨架屏流光加载态并异步读取数据
-        exp_view.load_task(task_id)
+        if task_id < 0:
+            exp_view.load_model(-task_id)
+        else:
+            exp_view.load_task(task_id)
 
     def show_project_dashboard(self):
         """Navigate back from Experiment Detail View to Project Dashboard."""
@@ -472,52 +522,65 @@ class ProjectDetailView(MkQWidget):
 
     def _render_task_list(self, tasks, preserve_console=False, defer_heavy=False):
         prev_task_id = self.current_task_id
+        collapsed = {header.group_id: header.is_collapsed() for header in self._group_headers}
+        self.task_card.blockSignals(True)
         self.task_card.clear_items()
-
-        # Preserve or initialize checked task IDs
-        all_tids = set(t["id"] for t in tasks)
-        if not hasattr(self, "checked_task_ids") or not self.checked_task_ids:
-            self.checked_task_ids = set(all_tids)
-        else:
-            self.checked_task_ids = self.checked_task_ids & all_tids
-            if not self.checked_task_ids:
-                self.checked_task_ids = set(all_tids)
-
-        selected_task_id = None
-        for row, t in enumerate(tasks):
-            tid = t["id"]
-            color = ACADEMIC_COLORS[row % len(ACADEMIC_COLORS)]
-            is_checked = (tid in self.checked_task_ids)
-            task_name = t.get("task_name", f"task_{tid}")
-            model_name = t.get("model_name", "-")
-            prog = t.get("progress", 0.0)
-            subtitle = f"{prog:.1f}% · {model_name}" if prog > 0 else model_name
-
-            item = self.task_card.add_item({
-                "id": tid,
-                "title": task_name,
-                "subtitle": subtitle,
-                "dot_color": color,
-                "checked": is_checked,
-                "actions": [
-                    {
-                        "key": "delete",
-                        "icon": "trash",
-                        "tooltip": "删除该训练任务",
-                        "danger": True
-                    }
-                ]
-            })
-            item.setMinimumHeight(56)
-
-            if prev_task_id and tid == prev_task_id:
-                selected_task_id = tid
-
+        for header in self._group_headers:
+            self.task_card.list_layout.removeWidget(header)
+            self.task_card._groups.pop(header.group_id, None)
+            header.deleteLater()
+        self._group_headers = []
+        all_ids = {t["id"] for t in tasks}
+        self.checked_task_ids = all_ids if self.checked_task_ids is None else self.checked_task_ids & all_ids
+        groups = {}
+        for record in tasks:
+            data = self._record_data.get(record["id"], {})
+            kind = data.get("task") or infer_task(record.get("model_name"), config_dict(record.get("config_json")))
+            groups.setdefault(kind, []).append(record)
+        for kind in TASK_LABELS:
+            if kind not in groups:
+                continue
+            self._group_headers.append(self.task_card.add_group(kind, TASK_LABELS[kind], collapsed=collapsed.get(kind, False)))
+            for record in groups[kind]:
+                tid = record["id"]
+                data = self._record_data.get(tid, {})
+                color = ACADEMIC_COLORS[sorted(all_ids).index(tid) % len(ACADEMIC_COLORS)]
+                subtitle = ""
+                if record.get("status") == "RUNNING":
+                    subtitle = f"{record.get('progress', 0):.1f}% · 训练中"
+                else:
+                    primary = metric_keys(kind)[0 if kind == "classify" else 2]
+                    value = data.get("metrics", {}).get(primary)
+                    if value is not None:
+                        subtitle = f"{value * 100:.1f}%"
+                    elif not record.get("is_imported"):
+                        subtitle = record.get("model_name", "")
+                size = data.get("file_size")
+                if size is None:
+                    path = checkpoint_path(record)
+                    if path:
+                        try:
+                            size = os.path.getsize(path)
+                        except OSError:
+                            pass
+                if size is not None:
+                    size_text = f"{size} B"
+                    for unit, divisor in (("GB", 1024 ** 3), ("MB", 1024 ** 2), ("KB", 1024)):
+                        if size >= divisor:
+                            size_text = f"{size / divisor:.1f} {unit}"
+                            break
+                    subtitle = " · ".join(part for part in (subtitle, size_text) if part)
+                self.task_card.add_item({
+                    "id": tid, "title": record["task_name"], "subtitle": subtitle,
+                    "dot_color": color, "checked": tid in self.checked_task_ids, "group_id": kind,
+                    "actions": [{"key": "delete", "icon": "trash", "tooltip": "移除模型记录" if tid < 0 else "删除该训练任务", "danger": True}],
+                })
+        self.task_card.blockSignals(False)
         if tasks:
-            if not selected_task_id:
-                selected_task_id = tasks[0]["id"]
-            self.select_task(selected_task_id, clear_console=(not preserve_console and selected_task_id != prev_task_id), defer_logs=defer_heavy)
-
+            preferred = getattr(self, "_preferred_record_id", None)
+            selected = preferred if preferred in all_ids else prev_task_id if prev_task_id in all_ids else tasks[0]["id"]
+            self._preferred_record_id = None
+            self.select_task(selected, clear_console=not preserve_console and selected != prev_task_id, defer_logs=defer_heavy)
         if defer_heavy:
             QTimer.singleShot(220, self._update_comparison_charts)
         else:
@@ -533,91 +596,70 @@ class ProjectDetailView(MkQWidget):
 
     def _on_task_action_clicked(self, action_key: str, item_id: Any):
         if action_key == "delete" and item_id:
-            self.handle_delete_task(int(item_id))
+            if int(item_id) < 0:
+                if MkMessageBox.confirm(self, "移除模型", "移除该模型记录？模型文件会保留。", danger=True, ok_text="移除", cancel_text="取消"):
+                    self.db.delete_model(-int(item_id))
+                    self.load_project(self.project_id)
+                    self.project_updated.emit(self.project_id)
+            else:
+                self.handle_delete_task(int(item_id))
 
     def _update_comparison_charts(self):
-        """Read results.csv from each checked task's run directory and render 3 core charts together."""
-        prec_series = {}
-        rec_series = {}
-        map_series = {}
-
-        if not self.project_id or not self.db:
-            return
-
-        tasks = self.db.get_tasks(project_id=self.project_id)
-        task_dict = {t["id"]: t for t in tasks}
-
-        checked_ids = sorted(list(getattr(self, "checked_task_ids", set())))
-        for idx, tid in enumerate(checked_ids):
-            t = task_dict.get(tid)
-            if not t:
+        series = [{}, {}, {}]
+        labels = [set(), set(), set()]
+        scope = self.metric_scope.currentData() or "auto"
+        all_ids = sorted(self._records)
+        for tid in sorted(self.checked_task_ids or ()):
+            record = self._records.get(tid)
+            if not record:
                 continue
-
-            color = ACADEMIC_COLORS[idx % len(ACADEMIC_COLORS)]
-            task_name = t.get("task_name", f"task_{tid}")
-            save_dir = t.get("save_dir", "")
-
-            epochs = []
-            prec_vals = []
-            rec_vals = []
-            map_vals = []
-
-            if save_dir and os.path.isdir(save_dir):
-                csv_file = os.path.join(save_dir, "results.csv")
-                if os.path.isfile(csv_file):
+            data = self._record_data.get(tid, {})
+            history = data.get("history", {})
+            folder = record.get("save_dir") or ""
+            if record.get("status") == "RUNNING" or not history:
+                csv_path = os.path.join(folder, "results.csv")
+                if folder and os.path.isfile(csv_path):
                     try:
-                        if pd is None:
-                            import pandas as pd
-                        df = pd.read_csv(csv_file)
-                        df.columns = [c.strip() for c in df.columns]
-
-                        if "epoch" in df.columns:
-                            epochs = [int(e) for e in df["epoch"].tolist()]
-                        else:
-                            epochs = list(range(1, len(df) + 1))
-
-                        for col in df.columns:
-                            if "metrics/precision(B)" in col or "precision(B)" in col:
-                                prec_vals = [float(v) for v in df[col].tolist()]
-                                break
-
-                        for col in df.columns:
-                            if "metrics/recall(B)" in col or "recall(B)" in col:
-                                rec_vals = [float(v) for v in df[col].tolist()]
-                                break
-
-                        for col in df.columns:
-                            if "metrics/mAP50-95(B)" in col or "mAP50-95(B)" in col:
-                                map_vals = [float(v) for v in df[col].tolist()]
-                                break
-                    except Exception:
+                        with open(csv_path, encoding="utf-8-sig", newline="") as source:
+                            rows = list(csv.DictReader(source))
+                        if rows:
+                            history = normalize_history({key: [r[key] for r in rows] for key in rows[0]})
+                    except (OSError, ValueError):
                         pass
-
-            if not epochs:
-                metrics = self.db.get_task_metrics(tid)
-                if metrics:
-                    epochs = [m["epoch"] for m in metrics]
-                    map_vals = [m.get("map50", 0.0) for m in metrics]
-
-            if epochs:
-                if prec_vals:
-                    prec_series[task_name] = {"epochs": epochs, "values": prec_vals, "color": color}
-                if rec_vals:
-                    rec_series[task_name] = {"epochs": epochs, "values": rec_vals, "color": color}
-                if map_vals:
-                    map_series[task_name] = {"epochs": epochs, "values": map_vals, "color": color}
-
-        if hasattr(self, "chart_precision"):
-            self.chart_precision.update_series(prec_series)
-        if hasattr(self, "chart_recall"):
-            self.chart_recall.update_series(rec_series)
-        if hasattr(self, "chart_map50_95"):
-            self.chart_map50_95.update_series(map_series)
+            kind = data.get("task") or infer_task(record.get("model_name"), config_dict(record.get("config_json")))
+            keys = metric_keys(kind, scope)
+            if not history and tid > 0 and kind in ("detect", "obb") and scope in ("auto", "B"):
+                rows = self.db.get_task_metrics(tid)
+                if rows:
+                    history = {"epoch": [r["epoch"] for r in rows]}
+                    for key, field in zip(keys, ("precision", "recall", "map50_95")):
+                        history[key] = [r[field] for r in rows]
+            for i, key in enumerate(keys):
+                if not key:
+                    continue
+                labels[i].add(key.removeprefix("metrics/"))
+                values = history.get(key, [])
+                epochs = history.get("epoch", list(range(1, len(values) + 1)))
+                if not values or len(epochs) != len(values):
+                    continue
+                name = record["task_name"]
+                if name in series[i]:
+                    name += f" ({tid})"
+                series[i][name] = {"epochs": epochs, "values": values,
+                                   "color": ACADEMIC_COLORS[all_ids.index(tid) % len(ACADEMIC_COLORS)]}
+        for i, chart in enumerate((self.chart_precision, self.chart_recall, self.chart_map50_95)):
+            title = " / ".join(sorted(labels[i])) if labels[i] else ("Precision", "Recall", "mAP50-95")[i]
+            chart.display_title = title
+            chart.lbl_title.setText(title)
+            chart.setVisible(i != 2 or bool(labels[i]) or not self.checked_task_ids)
+            chart.update_series(series[i])
+        count = 2 if self.checked_task_ids and not labels[2] else 3
+        self.lbl_metrics_title.setText(f"核心评估指标对比 ({count}/{count})")
 
     def select_task(self, task_id, clear_console=True, defer_logs=False):
         switching_task = (self.current_task_id != task_id)
         self.current_task_id = task_id
-        task = self.db.get_task_by_id(task_id)
+        task = self._records.get(task_id) or self.db.get_task_by_id(task_id)
         if not task:
             return
 
@@ -627,25 +669,31 @@ class ProjectDetailView(MkQWidget):
                 it._apply_style()
 
         # Update Status Bar
-        self.lbl_cur_task.setText(f"任务: {task['task_name']}")
+        self.lbl_cur_task.setText(f"{'模型' if task.get('is_imported') else '任务'}: {task['task_name']}")
         self.lbl_cur_model.setText(f"模型: {task['model_name']}")
         status = task.get("status", "WAITING")
-        self.lbl_cur_status.setText(status)
+        self.lbl_cur_status.setText("已导入" if status == "IMPORTED" else status)
 
         if status == "RUNNING":
             _MkThemeEngine.apply_style_sheet(self.lbl_cur_status, "padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; background: #dbeafe; color: #1d4ed8;")
             self.btn_stop_task.setVisible(True)
             self.btn_resume_task.setVisible(False)
-        elif status == "SUCCESS":
+        elif status in ("SUCCESS", "COMPLETED"):
             _MkThemeEngine.apply_style_sheet(self.lbl_cur_status, "padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; background: #dcfce7; color: #15803d;")
             self.btn_stop_task.setVisible(False)
             self.btn_resume_task.setVisible(True)
+        elif status == "IMPORTED":
+            _MkThemeEngine.apply_style_sheet(self.lbl_cur_status, "padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; background: #e2e8f0; color: #475569;")
         else:
             _MkThemeEngine.apply_style_sheet(self.lbl_cur_status, "padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; background: #fee2e2; color: #b91c1c;")
             self.btn_stop_task.setVisible(False)
             self.btn_resume_task.setVisible(True)
 
+        if task.get("is_imported"):
+            self.btn_resume_task.hide()
+            self.btn_stop_task.hide()
         prog = task.get("progress", 0.0)
+        self.progress_bar.setVisible(not task.get("is_imported"))
         self.progress_bar.percentage = int(prog)
 
         # Only clear/reload console when switching tasks or explicitly requested
@@ -720,22 +768,14 @@ class ProjectDetailView(MkQWidget):
     def handle_export_model(self):
         if not self.current_task_id:
             return
-        task = self.db.get_task_by_id(self.current_task_id)
+        task = self._records.get(self.current_task_id) or self.db.get_task_by_id(self.current_task_id)
         if not task:
             return
 
-        # Check for best.pt in task save_dir
-        save_dir = task.get("save_dir", "")
-        weights_dir = os.path.join(save_dir, "weights") if save_dir else ""
-        best_pt = os.path.join(weights_dir, "best.pt") if weights_dir else ""
-
-        if not os.path.exists(best_pt):
-            # Check save_dir directly
-            if os.path.exists(os.path.join(save_dir, "best.pt")):
-                best_pt = os.path.join(save_dir, "best.pt")
-            else:
-                MkMessage.warning(self, f"未在任务目录中检测到已产出的 best.pt 权重文件！")
-                return
+        best_pt = checkpoint_path(task)
+        if not best_pt:
+            MkMessage.warning(self, "未找到可导出的模型权重")
+            return
 
         model_info = {
             "name": f"{task['task_name']}_best",
@@ -759,33 +799,55 @@ class ProjectDetailView(MkQWidget):
     def handle_weights_dropped(self, file_paths):
         if not file_paths or not self.project_id:
             return
-        for f in file_paths:
-            if f.lower().endswith(".pt") and os.path.exists(f):
-                m_name = os.path.splitext(os.path.basename(f))[0]
-                arch = self.project_info.get("task_type", "yolo") if self.project_info else "yolo"
-                self.db.add_model(
-                    name=m_name,
-                    task_id=None,
-                    project_id=self.project_id,
-                    model_arch=arch,
-                    best_pt_path=f
-                )
-        MkMessage.success(self, f"已成功导入 {len(file_paths)} 个权重模型！")
-        self.load_project(self.project_id)
-        self.project_updated.emit(self.project_id)
+        from TrainingPlatform.core.env_manager import EnvironmentManager
+        python_exe = EnvironmentManager.get_instance().get_selected_python()
+        project_id = self.project_id
+        self.mini_upload.clear()
+        self.empty_upload.clear()
+
+        def fetch():
+            imported, errors = [], []
+            for path in dict.fromkeys(file_paths):
+                try:
+                    if not path.lower().endswith(".pt") or not os.path.isfile(path):
+                        raise ValueError("请选择有效的 .pt 模型文件")
+                    metadata = load_checkpoint_metadata(path, python_exe)
+                    model_id = self.db.import_model(project_id, path, metadata)
+                    model = self.db.get_model_by_id(model_id)
+                    linked_task = model.get("task_id")
+                    imported.append(linked_task if linked_task and self.db.get_task_by_id(linked_task) else -model_id)
+                except Exception as exc:
+                    errors.append(f"{os.path.basename(path)}: {exc}")
+            return imported, errors
+
+        def loaded(result):
+            imported, errors = result
+            if project_id == self.project_id:
+                if self.checked_task_ids is not None:
+                    self.checked_task_ids.update(imported)
+                if imported:
+                    self._preferred_record_id = imported[-1]
+                self.load_project(project_id)
+            self.project_updated.emit(project_id)
+            if imported:
+                MkMessage.success(self, f"已导入 {len(imported)} 个模型")
+            if errors:
+                MkMessage.error(self, "\n".join(errors))
+
+        self.run_async(fetch, on_success=loaded, auto_loading=False)
 
     def handle_delete_task(self, task_id):
         task = self.db.get_task_by_id(task_id)
         task_name = task.get("task_name", f"任务 #{task_id}") if task else f"任务 #{task_id}"
 
-        reply = QMessageBox.question(
+        if not MkMessageBox.confirm(
             self,
             "确认删除任务",
-            f"确定要删除训练任务 [{task_name}] 吗？\n该操作将删除该任务记录及其指标数据，且不可恢复。",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
-        )
-        if reply != QMessageBox.Yes:
+            f"确定要删除训练任务 [{task_name}] 吗？<br>该操作将删除该任务记录及其指标数据，且不可恢复。",
+            danger=True,
+            ok_text="删除任务",
+            cancel_text="取消",
+        ):
             return
 
         if self.task_mgr and self.task_mgr.is_running(task_id):
@@ -803,14 +865,14 @@ class ProjectDetailView(MkQWidget):
     def handle_delete_project(self):
         if not self.project_id or not self.project_info:
             return
-        reply = QMessageBox.question(
+        if MkMessageBox.confirm(
             self,
             "确认删除项目",
-            f"确定要删除项目 [{self.project_info['name']}] 吗？\n该操作将同时清理项目下的训练历史记录。",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
-        )
-        if reply == QMessageBox.Yes:
+            f"确定要删除项目 [{self.project_info['name']}] 吗？<br>该操作将同时清理项目下的训练历史记录。",
+            danger=True,
+            ok_text="删除项目",
+            cancel_text="取消",
+        ):
             pid = self.project_id
             self.db.delete_project(pid)
             MkMessage.success(self, "项目已成功删除！")

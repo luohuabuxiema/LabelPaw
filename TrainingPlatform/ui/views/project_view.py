@@ -5,10 +5,10 @@ Project Management View for AI Vision Training Platform
 from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                QTableWidget, QTableWidgetItem, QHeaderView,
-                               QDialog, QMessageBox)
+                               QDialog)
 from PySide6.QtCore import Qt
 
-from monkeyqt import MkCard, MkButton, MkInput, MkComboBox, MkForm, MkAlert, MkQWidget
+from monkeyqt import MkCard, MkButton, MkInput, MkComboBox, MkForm, MkAlert, MkQWidget, MkMessageBox
 from monkeyqt_icons import PhPlus
 
 class NewProjectDialog(QDialog):
@@ -25,10 +25,6 @@ class NewProjectDialog(QDialog):
         self.form = MkForm()
         self.input_name = MkInput(placeholder="例如: 猫狗目标检测")
         self.form.add_row("项目名称:", self.input_name)
-
-        self.combo_type = MkComboBox()
-        self.combo_type.addItems(["目标检测 (Detection)", "语义分割 (Segmentation)", "姿态估计 (Pose)", "图像分类 (Classification)"])
-        self.form.add_row("任务类型:", self.combo_type)
 
         self.input_desc = MkInput(placeholder="简述项目训练目标或场景")
         self.form.add_row("项目描述:", self.input_desc)
@@ -49,20 +45,10 @@ class NewProjectDialog(QDialog):
         layout.addLayout(btn_layout)
 
     def get_data(self):
-        type_text = self.combo_type.currentText()
-        if "Detection" in type_text:
-            task_type_raw = "detect"
-        elif "Segmentation" in type_text:
-            task_type_raw = "segment"
-        elif "Pose" in type_text:
-            task_type_raw = "pose"
-        else:
-            task_type_raw = "classify"
-
         return {
             "name": self.input_name.text().strip(),
             "description": self.input_desc.text().strip(),
-            "task_type": task_type_raw
+            "task_type": "mixed"
         }
 
 
@@ -93,9 +79,9 @@ class ProjectView(MkQWidget):
         card_layout = card.content_layout
 
         self.table = QTableWidget()
-        self.table.setColumnCount(5)
+        self.table.setColumnCount(4)
         self.table.setHorizontalHeaderLabels([
-            "ID", "项目名称", "任务类型", "创建时间", "操作"
+            "ID", "项目名称", "创建时间", "操作"
         ])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.verticalHeader().setVisible(False)
@@ -118,17 +104,13 @@ class ProjectView(MkQWidget):
             self.table.setItem(row, 0, QTableWidgetItem(str(p["id"])))
             self.table.setItem(row, 1, QTableWidgetItem(str(p["name"])))
 
-            type_item = QTableWidgetItem(str(p["task_type"]).upper())
-            type_item.setForeground(Qt.blue)
-            self.table.setItem(row, 2, type_item)
-
-            self.table.setItem(row, 3, QTableWidgetItem(str(p["create_time"])))
+            self.table.setItem(row, 2, QTableWidgetItem(str(p["create_time"])))
 
             # Action button container
             btn_del = MkButton("删除")
             _MkThemeEngine.apply_style_sheet(btn_del, "background-color: #fef0f0; color: #f56c6c; border: 1px solid #fde2e2;")
             btn_del.clicked.connect(lambda _, pid=p["id"]: self.delete_project(pid))
-            self.table.setCellWidget(row, 4, btn_del)
+            self.table.setCellWidget(row, 3, btn_del)
 
     def open_add_dialog(self):
         from TrainingPlatform.ui.views.dialogs import ProjectCreateDialog
@@ -137,8 +119,13 @@ class ProjectView(MkQWidget):
             self.refresh_projects()
 
     def delete_project(self, project_id):
-        reply = QMessageBox.question(self, "确认删除", "确定要删除该项目吗？这不会自动删除文件磁盘数据。",
-                                     QMessageBox.Yes | QMessageBox.No)
-        if reply == QMessageBox.Yes:
+        if MkMessageBox.confirm(
+            self,
+            "确认删除",
+            "确定要删除该项目吗？这不会自动删除文件磁盘数据。",
+            danger=True,
+            ok_text="删除",
+            cancel_text="取消"
+        ):
             self.db.delete_project(project_id)
             self.refresh_projects()

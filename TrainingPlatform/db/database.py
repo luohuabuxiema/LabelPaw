@@ -8,6 +8,15 @@ import sqlite3
 import json
 from datetime import datetime
 
+
+class _ClosingConnection(sqlite3.Connection):
+    def __exit__(self, *exc):
+        try:
+            return super().__exit__(*exc)
+        finally:
+            self.close()
+
+
 class DatabaseManager:
     def __init__(self, db_path=None):
         if db_path is None:
@@ -29,7 +38,7 @@ class DatabaseManager:
         self._init_db()
 
     def get_connection(self):
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, factory=_ClosingConnection)
         conn.row_factory = sqlite3.Row
         return conn
 
@@ -107,6 +116,8 @@ class DatabaseManager:
                 FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE SET NULL
             )
             """)
+            if "metadata_json" not in {row[1] for row in cursor.execute("PRAGMA table_info(models)")}:
+                cursor.execute("ALTER TABLE models ADD COLUMN metadata_json TEXT")
 
             # 5. Metrics History
             cursor.execute("""
@@ -131,7 +142,7 @@ class DatabaseManager:
             conn.commit()
 
     # --- Project APIs ---
-    def add_project(self, name, description, task_type):
+    def add_project(self, name, description, task_type="mixed"):
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with self.get_connection() as conn:
             cursor = conn.cursor()
@@ -311,6 +322,29 @@ class DatabaseManager:
             return [dict(row) for row in cursor.fetchall()]
 
     # --- Model APIs ---
+    def get_model_by_id(self, model_id):
+        with self.get_connection() as conn:
+            row = conn.execute("SELECT * FROM models WHERE id = ?", (model_id,)).fetchone()
+            return dict(row) if row else None
+
+    def update_model_metadata(self, model_id, metadata):
+        with self.get_connection() as conn:
+            conn.execute("UPDATE models SET model_arch = ?, metrics_json = ?, metadata_json = ? WHERE id = ?",
+                         (metadata.get("task", "unknown"), json.dumps(metadata.get("metrics", {})),
+                          json.dumps(metadata, ensure_ascii=False), model_id))
+
+    def import_model(self, project_id, path, metadata):
+        normalized = os.path.normcase(os.path.abspath(path))
+        existing = next((m for m in self.get_models(project_id)
+                         if os.path.normcase(os.path.abspath(m["best_pt_path"])) == normalized), None)
+        if existing:
+            model_id = existing["id"]
+        else:
+            model_id = self.add_model(os.path.splitext(os.path.basename(path))[0], None, project_id,
+                                      metadata.get("task", "unknown"), os.path.abspath(path))
+        self.update_model_metadata(model_id, metadata)
+        return model_id
+
     def add_model(self, name, task_id, project_id, model_arch, best_pt_path, last_pt_path=None, metrics=None):
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         metrics_str = json.dumps(metrics or {})

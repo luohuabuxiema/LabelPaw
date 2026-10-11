@@ -16,11 +16,11 @@ import os
 import sys
 from PySide6.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout,
                                QStackedWidget, QLabel, QPushButton,
-                               QGraphicsBlurEffect, QDialog, QMessageBox, QSizePolicy)
+                               QGraphicsBlurEffect, QDialog, QSizePolicy)
 from PySide6.QtCore import Qt, QObject, QEvent, Signal, QTimer, QRect
 from PySide6.QtGui import QPainter, QColor, QCursor, QBrush, QGuiApplication
 
-from monkeyqt import (MkWindow, MkMenu, MkButton, MkMessage, MkQWidget, use_theme, ThemeEngine)
+from monkeyqt import (MkWindow, MkMenu, MkButton, MkMessage, MkQWidget, MkMessageBox, use_theme, ThemeEngine)
 from monkeyqt_icons import (PhSun, PhMoon, PhFolderPlus, PhPlus,
                             PhGauge, PhEye, PhDatabase, PhFolder, PhTrash)
 
@@ -225,6 +225,8 @@ class MainWindow(MkWindow):
             sidebar_full_height=True,
             parent=parent
         )
+        from TrainingPlatform.ui.components.custom_tooltip import enable_component_tooltips
+        enable_component_tooltips(self)
         # Center the window on screen for initial restore state
         screen = QGuiApplication.primaryScreen()
         if screen:
@@ -362,7 +364,8 @@ class MainWindow(MkWindow):
         # 1. Clear previous project items
         to_remove = []
         for item in list(self.sub_train._items):
-            if item.item_id.startswith("project_"):
+            item_id = getattr(item, "item_id", None)
+            if item_id and str(item_id).startswith("project_"):
                 to_remove.append(item)
 
         for item in to_remove:
@@ -528,14 +531,14 @@ class MainWindow(MkWindow):
             QTimer.singleShot(50, lambda: self.view_dashboard.refresh_data(auto_loading=False))
 
     def confirm_delete_project(self, project_id: int, project_name: str):
-        reply = QMessageBox.question(
+        if MkMessageBox.confirm(
             self,
-            "确认删除项目",
-            f"确定要删除项目 [{project_name}] 吗？\n该操作将同时清理该项目下的所有训练历史记录与任务。",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        )
-        if reply == QMessageBox.StandardButton.Yes:
+            title="确认删除项目",
+            content=f"确定要删除项目 [{project_name}] 吗？<br>该操作将同时清理该项目下的所有训练历史记录与任务。",
+            danger=True,
+            ok_text="删除项目",
+            cancel_text="取消",
+        ):
             self.db.delete_project(project_id)
             MkMessage.success(self, f"项目 [{project_name}] 已成功删除！")
             self.on_project_deleted(project_id)

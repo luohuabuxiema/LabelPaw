@@ -1722,13 +1722,19 @@ class AdvHeaderBar(QFrame):
 
 class TrainCreateDialog(QDialog):
     task_started = Signal(int)  # emits task_id upon successful launch
+    model_inspected = Signal(str, object, bool)
 
     def __init__(self, project_info, db_manager, task_manager, parent=None):
         super().__init__(parent)
         self.project = project_info
+        self.task_type = project_info.get("task_type", "detect")
+        if self.task_type not in MODEL_CATALOG:
+            self.task_type = "detect"
         self.db = db_manager
         self.task_mgr = task_manager
         self.created_task_id = None
+        self._custom_model_signature = None
+        self.model_inspected.connect(self._on_custom_model_inspected)
         self._parent_widget = parent
         self._top_window = parent.window() if parent else None
 
@@ -1940,7 +1946,7 @@ class TrainCreateDialog(QDialog):
         """
         from TrainingPlatform.core.env_manager import get_workspace_root
         workspace = get_workspace_root()
-        task_type = (self.project.get("task_type") if self.project else None) or "detect"
+        task_type = self.task_type
         runs_task_dir = os.path.join(workspace, "runs", task_type)
 
         existing_names = set()
@@ -2033,7 +2039,7 @@ class TrainCreateDialog(QDialog):
         _MkThemeEngine.apply_style_sheet(self.arrow_icon, "background: transparent; border: none;")
         header_layout.addWidget(self.arrow_icon)
 
-        tag_text = self.project.get('task_type', 'detect')
+        tag_text = self.task_type
         task_names_cn = {
             "detect": "目标检测 (detect)",
             "segment": "实例分割 (segment)",
@@ -2095,7 +2101,14 @@ class TrainCreateDialog(QDialog):
         l_mh.addStretch()
         col_model.addWidget(lbl_model_header)
 
-        self.combo_model = ModelPickerWidget(task_type=self.project.get('task_type', 'detect'), parent=self)
+        self.combo_task_type = MkComboBox()
+        for title, task in (("目标检测 Detect", "detect"), ("实例分割 Segment", "segment"),
+                            ("关键点 Pose", "pose"), ("图像分类 Classify", "classify"), ("旋转框 OBB", "obb")):
+            self.combo_task_type.addItem(title, task)
+        self.combo_task_type.setCurrentIndex(self.combo_task_type.findData(self.task_type))
+        col_model.addWidget(self.combo_task_type)
+        self.combo_model = ModelPickerWidget(task_type=self.task_type, parent=self)
+        self.combo_task_type.currentIndexChanged.connect(self._on_task_type_changed)
         col_model.addWidget(self.combo_model)
 
         # Custom weight row
@@ -2157,7 +2170,7 @@ class TrainCreateDialog(QDialog):
         col_dataset.addWidget(lbl_ds_header)
 
         # Integrated YAML Code Editor
-        self.yaml_editor = YamlCodeEditor(self, task_type=self.project.get('task_type', 'detect'))
+        self.yaml_editor = YamlCodeEditor(self, task_type=self.task_type)
         col_dataset.addWidget(self.yaml_editor)
 
         top_grid.addLayout(col_dataset, stretch=5)
@@ -2842,7 +2855,7 @@ class TrainCreateDialog(QDialog):
                 model_str = "yolo26n.pt"
 
         # 3. task
-        task_str = self.project.get("task_type", "detect") if isinstance(self.project, dict) else "detect"
+        task_str = self.task_type
 
         # 2. data (absolute path to the actual YAML file)
         is_pose = (task_str or "detect").lower() in ("pose", "keypoint", "kpt", "keypoints")
@@ -2997,6 +3010,54 @@ class TrainCreateDialog(QDialog):
                 elif hasattr(sw, "toggled"):
                     sw.toggled.connect(self._update_cli_command)
 
+    def _on_task_type_changed(self, index):
+        self.task_type = self.combo_task_type.currentData()
+        self.tag_lbl.setText(self.combo_task_type.currentText())
+        self.combo_model.task_type = self.task_type
+        if self.combo_model._popup is not None:
+            self.combo_model._popup.deleteLater()
+            self.combo_model._popup = None
+        self.combo_model.reset_to_default()
+        if hasattr(self, "yaml_editor"):
+            self.yaml_editor.task_type = self.task_type
+            self.yaml_editor.set_yaml_text(format_filtered_yaml(self.yaml_editor.get_yaml_text(), self.task_type))
+        self._update_cli_command()
+
+    def _inspect_custom_model(self, path, start_after=False):
+        import threading
+        from TrainingPlatform.core.checkpoint_metadata import load_checkpoint_metadata
+        python_exe = self.env_selector.get_selected_python()
+        self.btn_start.setEnabled(False)
+
+        def inspect_model():
+            try:
+                result = load_checkpoint_metadata(path, python_exe)
+            except Exception as exc:
+                result = {"error": str(exc)}
+            try:
+                self.model_inspected.emit(path, result, start_after)
+            except RuntimeError:
+                pass  # The dialog was closed while its worker was reading.
+
+        threading.Thread(target=inspect_model, daemon=True).start()
+
+    def _on_custom_model_inspected(self, path, result, start_after):
+        self.btn_start.setEnabled(True)
+        if self.input_custom_model.text().strip() != path:
+            return
+        if result.get("error"):
+            MkMessage.error(self, result["error"])
+            return
+        index = self.combo_task_type.findData(result.get("task"))
+        if index < 0:
+            MkMessage.error(self, "当前训练对话框尚不支持该模型的任务类型")
+            return
+        self.combo_task_type.setCurrentIndex(index)
+        self._custom_model_signature = (path, os.stat(path).st_mtime_ns, os.path.getsize(path))
+        self._custom_model_task = result["task"]
+        if start_after:
+            self.handle_start_training()
+
     def _populate_model_options(self):
         """Populate models catalog (handled dynamically by ModelPickerWidget)."""
         pass
@@ -3007,6 +3068,7 @@ class TrainCreateDialog(QDialog):
             file_path, _ = QFileDialog.getOpenFileName(self, "选择本地 PyTorch 权重文件", "", "PyTorch Models (*.pt);;All Files (*.*)")
             if file_path:
                 self.input_custom_model.setText(file_path)
+                self._inspect_custom_model(file_path)
                 MkMessage.info(self, f"已选择本地权重: {os.path.basename(file_path)}")
         finally:
             self._is_showing_sub_dialog = False
@@ -3019,7 +3081,7 @@ class TrainCreateDialog(QDialog):
             )
             if file_path:
                 self._uploaded_yaml_path = file_path.replace('\\', '/')
-                formatted_yaml = format_filtered_yaml(file_path, self.project.get('task_type', 'detect'))
+                formatted_yaml = format_filtered_yaml(file_path, self.task_type)
                 self.yaml_editor.set_yaml_text(formatted_yaml)
                 self._update_cli_command()
                 MkMessage.success(self, f"已成功解析并提取必要参数: {os.path.basename(file_path)}")
@@ -3090,6 +3152,11 @@ class TrainCreateDialog(QDialog):
                 MkMessage.error(self, f"指定的本地权重文件不存在:\n{custom_model}")
                 return
             model_name = custom_model
+            signature = (custom_model, os.stat(custom_model).st_mtime_ns, os.path.getsize(custom_model))
+            if signature != self._custom_model_signature:
+                self._inspect_custom_model(custom_model, start_after=True)
+                return
+            self.combo_task_type.setCurrentIndex(self.combo_task_type.findData(self._custom_model_task))
         else:
             model_name = self.combo_model.currentData()
             if not model_name:
@@ -3132,7 +3199,7 @@ class TrainCreateDialog(QDialog):
                 f.write(yaml_text)
 
             # Also keep TrainingPlatform/cfg/datasets/data.yaml in sync if default template was edited
-            task_str = self.project.get("task_type", "detect") if isinstance(self.project, dict) else "detect"
+            task_str = self.task_type
             is_pose = (task_str or "detect").lower() in ("pose", "keypoint", "kpt", "keypoints")
             cfg_filename = "data-pose.yaml" if is_pose else "data.yaml"
             cfg_yaml_path = os.path.join(workspace, "TrainingPlatform", "cfg", "datasets", cfg_filename)
@@ -3232,6 +3299,7 @@ class TrainCreateDialog(QDialog):
         device_raw = "0" if "0" in self.combo_device.currentText() else "cpu"
 
         config_dict = {
+            "task": self.task_type,
             # Core
             "epochs": epochs,
             "batch": batch,

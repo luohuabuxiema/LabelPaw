@@ -5,11 +5,12 @@ YOLO Training Worker Thread using PySide6 QThread & Ultralytics API
 import sys
 import os
 import re
-import time
 import json
-import subprocess
 import traceback
 from PySide6.QtCore import QThread, Signal
+from TrainingPlatform.core.worker_runtime import (
+    WorkerProcess, get_workspace_root, normalize_python, terminate_process_tree,
+)
 
 class TrainWorker(QThread):
     log_signal = Signal(str)          # 实时日志文本
@@ -23,7 +24,7 @@ class TrainWorker(QThread):
         self.dataset_yaml = dataset_yaml
         self.config_dict = config_dict
         self.save_dir = save_dir
-        self.python_exe = python_exe
+        self.python_exe = normalize_python(python_exe)
         self._is_stopped = False
         self._process = None
         self._log_file_path = None
@@ -74,10 +75,7 @@ class TrainWorker(QThread):
         self._emit_log("[WARN] 收到用户停止指令，正在停止训练...")
         if self._process and self._process.poll() is None:
             try:
-                self._process.terminate()
-                time.sleep(0.5)
-                if self._process.poll() is None:
-                    self._process.kill()
+                terminate_process_tree(self._process)
             except Exception:
                 pass
 
@@ -91,11 +89,11 @@ class TrainWorker(QThread):
                 self._emit_log(f"[INFO] 目标运行环境: {self.python_exe}")
             self._emit_log("-" * 60)
 
-            # Check if using external python_exe runner
-            if self.python_exe and os.path.isfile(self.python_exe):
-                self._run_via_subprocess()
-            else:
-                self._run_in_process()
+            if self._is_stopped:
+                raise StopIteration("训练已被终止")
+            # Every environment uses a child process; invalid paths must not silently
+            # switch to training inside the GUI process.
+            self._run_via_subprocess()
 
         except StopIteration as e:
             self._emit_log(f"[STOP] {str(e)}")
@@ -113,13 +111,8 @@ class TrainWorker(QThread):
             json.dump(self.config_dict, f, ensure_ascii=False, indent=2)
 
         runner_script = os.path.join(os.path.dirname(__file__), "train_runner.py")
-        workspace = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-
-        env = os.environ.copy()
-        cmd = [
-            self.python_exe,
-            "-u",
-            runner_script,
+        workspace = get_workspace_root()
+        runner_args = [
             "--task-id", str(self.task_id),
             "--model", str(self.model_name),
             "--data", str(self.dataset_yaml),
@@ -127,28 +120,38 @@ class TrainWorker(QThread):
             "--config-file", str(config_file)
         ]
 
-        startupinfo = None
-        if os.name == 'nt':
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            startupinfo.wShowWindow = subprocess.SW_HIDE
-
         self._emit_log(f"[INFO] 正在启动训练子进程...")
-        self._process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            encoding='utf-8',
-            errors='replace',
-            cwd=workspace,
-            env=env,
-            startupinfo=startupinfo
+        child = WorkerProcess(
+            self.python_exe, "--train-worker", runner_script, runner_args, cwd=workspace,
         )
+        self._process = child.process
+        if self._is_stopped:
+            terminate_process_tree(self._process)
 
-        success = False
-        fail_reason = None
-        for line in self._process.stdout:
+        success_state = {"success": False, "reason": None}
+        try:
+            self._consume_training_output(child, success_state)
+        finally:
+            child.close()
+
+        success = success_state["success"]
+        fail_reason = success_state["reason"]
+        self._flush_pending_log()
+        if self._is_stopped:
+            self._emit_log("[WARN] 训练已被用户中途终止")
+            self.finish_signal.emit(False, "训练已被用户中途终止")
+        elif success and not fail_reason and self._process.returncode == 0:
+            self.finish_signal.emit(True, "训练完成")
+        else:
+            err_msg = fail_reason or (
+                "训练进程未返回完成标记" if self._process.returncode == 0
+                else f"训练子进程退出码: {self._process.returncode}"
+            )
+            self._emit_log(f"[ERROR] 训练失败: {err_msg}")
+            self.finish_signal.emit(False, err_msg)
+
+    def _consume_training_output(self, child, state):
+        for line in child.iter_lines():
             raw_line = line.rstrip('\r\n')
             if raw_line.startswith("__TRAIN_PROGRESS__"):
                 try:
@@ -167,9 +170,9 @@ class TrainWorker(QThread):
                     except Exception:
                         pass
             elif raw_line == "__TRAIN_SUCCESS__":
-                success = True
+                state["success"] = True
             elif raw_line.startswith("__TRAIN_FAILED__"):
-                fail_reason = raw_line[len("__TRAIN_FAILED__"):]
+                state["reason"] = raw_line[len("__TRAIN_FAILED__"):]
             else:
                 # Handle \r inside raw_line from tqdm dynamic in-place updates
                 if '\r' in raw_line:
@@ -181,18 +184,6 @@ class TrainWorker(QThread):
                     self._emit_log(filtered_line)
                 elif raw_line == "":
                     self._emit_log("")
-
-        self._process.wait()
-        self._flush_pending_log()
-        if self._is_stopped:
-            self._emit_log("[WARN] 训练已被用户中途终止")
-            self.finish_signal.emit(False, "训练已被用户中途终止")
-        elif success or self._process.returncode == 0:
-            self.finish_signal.emit(True, "训练完成")
-        else:
-            err_msg = fail_reason or f"训练子进程退出码: {self._process.returncode}"
-            self._emit_log(f"[ERROR] 训练失败: {err_msg}")
-            self.finish_signal.emit(False, err_msg)
 
     def _run_in_process(self):
         """Fallback in-process training."""
@@ -266,7 +257,7 @@ class TrainWorker(QThread):
         }
 
         for k, v in self.config_dict.items():
-            if v is not None and k not in ("project", "name", "exist_ok", "plots", "verbose", "data", "python_exe"):
+            if v is not None and k not in ("project", "name", "exist_ok", "plots", "verbose", "data", "python_exe", "cli_command", "task_id", "task_name", "model_name", "cls_remap"):
                 train_args[k] = v
 
         self._emit_log("[INFO] 正在投入模型训练，请稍候...")

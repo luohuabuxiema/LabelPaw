@@ -9,18 +9,11 @@ import sys
 import re
 import json
 import shutil
-import subprocess
 from typing import List, Dict, Optional
 from PySide6.QtCore import QObject, Signal, QThread
-
-
-def get_workspace_root() -> str:
-    """Return the root directory of LabelPaw workspace."""
-    if getattr(sys, 'frozen', False):
-        return os.path.dirname(sys.executable)
-    cur_dir = os.path.dirname(os.path.abspath(__file__))
-    # cur_dir is TrainingPlatform/core -> workspace root is ../..
-    return os.path.abspath(os.path.join(cur_dir, "..", ".."))
+from TrainingPlatform.core.worker_runtime import (
+    WorkerProcess, get_workspace_root, normalize_python,
+)
 
 
 def get_platform_data_dir() -> str:
@@ -64,12 +57,12 @@ class EnvProbeWorker(QThread):
 
     def __init__(self, python_path: str, parent=None):
         super().__init__(parent)
-        self.python_path = python_path
+        self.python_path = normalize_python(python_path)
 
     def run(self):
         workspace = get_workspace_root()
         self.log_line.emit(f">>> 正在测试 Python 环境: {self.python_path}")
-        self.log_line.emit(f">>> 正在探测独立虚拟环境依赖 (PyTorch, CUDA, Ultralytics)...")
+        self.log_line.emit(f">>> 正在探测运行环境依赖 (PyTorch, CUDA, Ultralytics)...")
 
         if not os.path.isfile(self.python_path):
             self.log_line.emit(f"[ERROR] 指定的 Python 解释器不存在: {self.python_path}")
@@ -81,124 +74,34 @@ class EnvProbeWorker(QThread):
             })
             return
 
-        probe_script = f"""
-import sys
-import json
-
-# Clean up workspace and current dir from sys.path so environment's native packages are probed
-workspace = r"{workspace}"
-while workspace in sys.path:
-    sys.path.remove(workspace)
-while "" in sys.path:
-    sys.path.remove("")
-sys.path.append(workspace)
-
-result = {{
-    "python_path": sys.executable,
-    "python_version": sys.version.split()[0],
-    "valid": True,
-    "torch_installed": False,
-    "torch_version": None,
-    "cuda_available": False,
-    "cuda_version": None,
-    "device_count": 0,
-    "device_names": [],
-    "ultralytics_installed": False,
-    "ultralytics_version": None,
-    "ultralytics_source": None,
-    "error": None
-}}
-
-try:
-    import torch
-    result["torch_installed"] = True
-    result["torch_version"] = str(torch.__version__)
-    print(torch.__version__)
-    
-    cuda_avail = bool(torch.cuda.is_available())
-    result["cuda_available"] = cuda_avail
-    print(cuda_avail)
-    
-    dev_count = int(torch.cuda.device_count()) if cuda_avail else 0
-    result["device_count"] = dev_count
-    print(dev_count)
-    
-    cuda_ver = str(getattr(torch.version, "cuda", "Unknown"))
-    result["cuda_version"] = cuda_ver
-    print(f"CUDA: {{cuda_ver}}")
-    
-    if cuda_avail:
-        for i in range(dev_count):
-            try:
-                name = torch.cuda.get_device_name(i)
-                result["device_names"].append(name)
-            except Exception:
-                result["device_names"].append(f"GPU {{i}}")
-except Exception as e:
-    result["error"] = str(e)
-    print(f"Torch 导入/检测异常: {{e}}")
-
-try:
-    import ultralytics
-    result["ultralytics_installed"] = True
-    result["ultralytics_version"] = str(getattr(ultralytics, "__version__", "未知"))
-    result["ultralytics_source"] = str(getattr(ultralytics, "__file__", ""))
-except Exception as e:
-    result["ultralytics_error"] = str(e)
-
-print("__ENV_PROBE_JSON__" + json.dumps(result))
-"""
-
-        env = os.environ.copy()
-        env["PYTHONIOENCODING"] = "utf-8"
-        # Prepend workspace to PYTHONPATH
-        existing_pythonpath = env.get("PYTHONPATH", "")
-        env["PYTHONPATH"] = f"{workspace}{os.pathsep}{existing_pythonpath}" if existing_pythonpath else workspace
-
         try:
-            startupinfo = None
-            if os.name == 'nt':
-                startupinfo = subprocess.STARTUPINFO()
-                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-                startupinfo.wShowWindow = subprocess.SW_HIDE
-
-            process = subprocess.Popen(
-                [self.python_path, "-u", "-c", probe_script],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                encoding='utf-8',
-                errors='replace',
-                env=env,
-                cwd=workspace,
-                startupinfo=startupinfo
-            )
-
             result_dict = None
-            for line in process.stdout:
-                clean_line = line.rstrip()
-                if clean_line.startswith("__ENV_PROBE_JSON__"):
-                    json_str = clean_line[len("__ENV_PROBE_JSON__"):]
-                    try:
-                        result_dict = json.loads(json_str)
-                    except Exception:
-                        pass
-                else:
-                    # Strip ANSI escape sequences (e.g. \x1b[0m from colorama / tqdm)
-                    filtered_line = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', clean_line).strip()
-                    if filtered_line:
-                        self.log_line.emit(filtered_line)
-
-            process.wait()
+            runner_script = os.path.join(os.path.dirname(__file__), "env_probe_runner.py")
+            with WorkerProcess(self.python_path, "--env-probe", runner_script, [], cwd=workspace) as child:
+                for line in child.iter_lines():
+                    clean_line = line.rstrip()
+                    if clean_line.startswith("__ENV_PROBE_JSON__"):
+                        try:
+                            result_dict = json.loads(clean_line[len("__ENV_PROBE_JSON__"):])
+                        except (ValueError, TypeError):
+                            pass
+                    else:
+                        filtered_line = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', clean_line).strip()
+                        if filtered_line:
+                            self.log_line.emit(filtered_line)
+                returncode = child.process.returncode
 
             if not result_dict:
                 result_dict = {
                     "python_path": self.python_path,
-                    "valid": process.returncode == 0,
-                    "error": f"进程退出码: {process.returncode}",
+                    "valid": False,
+                    "error": f"环境探测未返回有效结果 (退出码: {returncode})",
                     "cuda_available": False,
                     "torch_installed": False
                 }
+            elif returncode != 0:
+                result_dict["valid"] = False
+                result_dict["error"] = result_dict.get("error") or f"环境探测退出码: {returncode}"
 
             # Summary evaluation
             if result_dict.get("cuda_available"):
@@ -268,19 +171,32 @@ class EnvironmentManager(QObject):
 
     def get_selected_python(self) -> str:
         cfg = self.load_config()
-        sel = cfg.get("selected_python")
+        stored = cfg.get("selected_python")
+        sel = normalize_python(stored) if stored else None
+        if sel and sel != stored:
+            cfg["selected_python"] = sel
+            self.save_config(cfg)
         if sel and os.path.isfile(sel):
             return sel
-        return sys.executable
+        envs = self.scan_environments()
+        if envs:
+            return envs[0]["path"]
+        if not getattr(sys, 'frozen', False):
+            return sys.executable
+        import shutil
+        sys_py = shutil.which("python")
+        if sys_py and os.path.isfile(sys_py):
+            return sys_py
+        return ""
 
     def set_selected_python(self, python_path: str):
         cfg = self.load_config()
-        cfg["selected_python"] = python_path
+        cfg["selected_python"] = normalize_python(python_path)
         self.save_config(cfg)
 
     def add_custom_environment(self, python_path: str) -> bool:
         """Add a user-selected python.exe to custom envs and save."""
-        python_path = os.path.abspath(python_path)
+        python_path = normalize_python(python_path)
         if not os.path.isfile(python_path):
             return False
 
@@ -314,6 +230,7 @@ class EnvironmentManager(QObject):
         seen_paths = set()
 
         def _add_env(name: str, py_path: str, category: str, is_default: bool = False):
+            py_path = normalize_python(py_path)
             norm_path = os.path.normpath(py_path).lower()
             if norm_path in seen_paths:
                 return
@@ -329,19 +246,26 @@ class EnvironmentManager(QObject):
             })
 
         # 1. Current Runtime Python
-        _add_env(
-            f"当前运行环境 ({os.path.basename(os.path.dirname(sys.executable))})",
-            sys.executable,
-            category="current",
-            is_default=True
-        )
+        if getattr(sys, 'frozen', False):
+            _add_env(
+                "内置运行环境（随软件提供）",
+                sys.executable,
+                category="builtin",
+                is_default=True
+            )
+        else:
+            _add_env(
+                f"当前开发环境 ({os.path.basename(os.path.dirname(sys.executable))})",
+                sys.executable,
+                category="current",
+                is_default=True
+            )
 
         # 2. Built-in / Packaged Python (for distributed builds)
         workspace = get_workspace_root()
         builtin_candidates = [
             os.path.join(workspace, "python", "python.exe"),
             os.path.join(workspace, "runtime", "python.exe"),
-            os.path.join(workspace, "_internal", "python.exe"),
             os.path.join(workspace, "bin", "python.exe"),
         ]
         for b_py in builtin_candidates:
@@ -405,6 +329,16 @@ class EnvironmentManager(QObject):
             if os.path.isfile(cust_py):
                 name = f"自定义: {os.path.basename(os.path.dirname(cust_py))}"
                 _add_env(name, cust_py, category="custom")
+
+        # 6. System PATH Python
+        import shutil
+        sys_py = shutil.which("python")
+        if sys_py and os.path.isfile(sys_py):
+            if not (getattr(sys, 'frozen', False) and os.path.abspath(sys_py).lower() == os.path.abspath(sys.executable).lower()):
+                _add_env("系统环境 (System Python)", sys_py, category="system")
+
+        if discovered and not any(e.get("is_default") for e in discovered):
+            discovered[0]["is_default"] = True
 
         self.cached_envs = discovered
         return discovered

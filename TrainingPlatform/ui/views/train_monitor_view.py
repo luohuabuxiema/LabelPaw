@@ -6,12 +6,12 @@ Using MonkeyQt MkConsole, MkProgressBar, MetricChart, MkCard, MkButton
 from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                QTableWidget, QTableWidgetItem, QHeaderView,
-                               QTextEdit, QMessageBox, QSplitter)
+                               QTextEdit, QSplitter)
 from PySide6.QtCore import Qt, Slot, QTimer
 from PySide6.QtGui import QTextCursor
 
 from monkeyqt import (MkCard, MkButton, MkProgressBar,
-                      MkComboBox, MkConsole, MkAlert, MkQWidget)
+                      MkComboBox, MkConsole, MkAlert, MkQWidget, MkMessageBox)
 from monkeyqt_icons import PhStop, PhPlay
 from TrainingPlatform.ui.components.metric_chart import MetricChart
 
@@ -202,7 +202,7 @@ class TrainMonitorView(MkQWidget):
             return
         success, msg = self.task_mgr.start_task(self.current_task_id)
         if not success:
-            QMessageBox.warning(self, "启动失败", msg)
+            MkMessageBox.warning(self, "启动失败", msg, cancel_text=None)
         else:
             self.refresh_task_list(select_task_id=self.current_task_id)
 
@@ -210,5 +210,5 @@ class TrainMonitorView(MkQWidget):
         if not self.current_task_id:
             return
         success, msg = self.task_mgr.stop_task(self.current_task_id)
-        QMessageBox.information(self, "终止提示", msg)
+        MkMessageBox.info(self, "终止提示", msg)
         self.refresh_task_list(select_task_id=self.current_task_id)

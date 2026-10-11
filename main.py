@@ -5,6 +5,17 @@ import os
 # PyInstaller 打包运行环境资源路径适配
 # ============================================================
 if getattr(sys, 'frozen', False):
+    import multiprocessing
+    multiprocessing.freeze_support()
+
+from TrainingPlatform.core.worker_runtime import dispatch_worker
+
+if __name__ == "__main__":
+    worker_exit_code = dispatch_worker()
+    if worker_exit_code is not None:
+        sys.exit(worker_exit_code)
+
+if getattr(sys, 'frozen', False):
     # PyInstaller 6+ 默认将所有数据文件 (--add-data) 存放在 _internal 目录 (即 sys._MEIPASS)
     # 而可执行文件启动时的默认工作目录是 dist/LabelPaw，导致相对路径 "ui/icon/..." 无法读取。
     # 切换工作目录至 _internal，使所有的 "ui/icon/..."、"labelpaw/config/..." 相对路径完美命中。
@@ -2413,7 +2424,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def _update_help_text(self, mode):
         # 只有在智能模式开启，并且当前选择的是SAM模型时，才显示悬停预览提示
-        is_sam = self.samSwitch.isChecked() and getattr(self.sam_client, 'current_model_key', '').startswith('sam')
+        current_model_key = getattr(self.sam_client, 'current_model_key', None) or ''
+        is_sam = self.samSwitch.isChecked() and current_model_key.startswith('sam')
         if mode == CanvasMode.RECT:
             if is_sam:
                 self.helpLabel.setText("操作: 鼠标悬停实时预览外接矩形，左键点击直接确认生成矩形框")

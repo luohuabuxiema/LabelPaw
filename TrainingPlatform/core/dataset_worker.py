@@ -12,8 +12,8 @@ import numpy as np
 import xml.etree.ElementTree as ET
 
 from PySide6.QtCore import QThread, Signal
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QSpinBox, QMessageBox
-from monkeyqt import MkForm, MkButton, apply_monkeyqt_theme
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QSpinBox
+from monkeyqt import MkForm, MkButton, MkMessageBox, apply_monkeyqt_theme
 
 class DatasetWorker(QThread):
     log_signal = Signal(str)
@@ -521,7 +521,7 @@ class RatioDialog(QDialog):
     def check_and_accept(self):
         t, v, te = self.train_box.value(), self.val_box.value(), self.test_box.value()
         if t + v + te != 100:
-            QMessageBox.warning(self, "错误提示", "三个划分比例之和必须精确等于 100%！")
+            MkMessageBox.warning(self, "错误提示", "三个划分比例之和必须精确等于 100%！", cancel_text=None)
             return
         self.ratios = (t / 100.0, v / 100.0, te / 100.0)
         self.accept()

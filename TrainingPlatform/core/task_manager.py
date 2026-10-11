@@ -51,8 +51,10 @@ class TaskManager(QObject):
         from TrainingPlatform.core.env_manager import get_workspace_root
         workspace = get_workspace_root()
 
-        proj = self.db.get_project_by_id(task["project_id"]) if task.get("project_id") else None
-        task_type = (proj.get("task_type") if proj else None) or "detect"
+        from TrainingPlatform.core.checkpoint_metadata import infer_task
+        task_type = infer_task(task["model_name"], config_dict)
+        if task_type == "unknown":
+            return False, "无法确定模型任务类型，请在训练配置中选择任务类型"
         task_name = task.get("task_name") or f"exp-{task_id}"
 
         save_dir = os.path.join(workspace, "runs", task_type, task_name)

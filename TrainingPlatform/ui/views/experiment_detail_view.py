@@ -18,6 +18,7 @@ import time
 from copy import deepcopy
 from datetime import datetime
 from typing import Optional, Dict, List, Any
+from TrainingPlatform.core.worker_runtime import WorkerProcess, terminate_process_tree
 import pandas as pd
 import numpy as np
 
@@ -25,13 +26,13 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                QScrollArea, QFrame, QToolButton,
                                QTableWidget, QTableWidgetItem, QHeaderView,
                                QSlider, QSpinBox, QDoubleSpinBox, QComboBox,
-                               QFileDialog, QMessageBox, QSplitter, QSizePolicy,
+                               QFileDialog, QSplitter, QSizePolicy,
                                QPushButton, QLineEdit, QGridLayout, QPlainTextEdit,
                                QStackedWidget, QGraphicsDropShadowEffect)
 from PySide6.QtCore import Qt, Signal, Slot, QThread, QSize, QTimer, QRectF
 from PySide6.QtGui import QFont, QColor, QPixmap, QImage, QTextCursor, QTextCharFormat
 
-from monkeyqt import (MkCard, MkButton, MkInput, MkConsole, MkMessage, MkQWidget, SegmentedTabBar, ThemeEngine, MkProTable, MkPage, MkStackedWidget, MkSlider)
+from monkeyqt import (MkCard, MkButton, MkInput, MkConsole, MkMessage, MkQWidget, SegmentedTabBar, ThemeEngine, MkProTable, MkPage, MkStackedWidget, MkSlider, MkMessageBox)
 from monkeyqt_icons import (PhArrowLeft, PhPlay, PhDownloadSimple, PhFolder,
                             PhCopy, PhCheck, PhFileText, PhSliders, PhSparkle,
                             PhCpu, PhTerminalWindow, PhChartLine, PhMagnifyingGlass, PhLayout)
@@ -45,7 +46,10 @@ from TrainingPlatform.ui.components.predict_widgets import (
 from TrainingPlatform.ui.components.export_widgets import (
     BaseExportDialog, ExportFormatCard, EXPORT_SPECS
 )
-from TrainingPlatform.ui.components.custom_tooltip import attach_tooltip, CustomTooltipPopover
+from TrainingPlatform.ui.components.custom_tooltip import attach_tooltip, CustomTooltipPopover, enable_component_tooltips
+from TrainingPlatform.core.checkpoint_metadata import (
+    experiment_data, model_experiment, metric_keys, training_command, config_dict,
+)
 
 
 class InferenceWorkerThread(QThread):
@@ -146,7 +150,7 @@ class ExportWorkerThread(QThread):
         self._is_cancelled = True
         if self._proc and self._proc.poll() is None:
             try:
-                self._proc.kill()
+                terminate_process_tree(self._proc)
             except Exception:
                 pass
 
@@ -172,38 +176,26 @@ class ExportWorkerThread(QThread):
         env["PYTHONUNBUFFERED"] = "1"
         env["PYTHONIOENCODING"] = "utf-8"
 
-        cmd = [
-            sys.executable,
-            runner_script,
+        from TrainingPlatform.core.env_manager import EnvironmentManager
+        py_exe = EnvironmentManager.get_instance().get_selected_python()
+        runner_args = [
             "--weights", self.weights_path,
             "--config", self._tmp_cfg_path
         ]
 
-        # Hide console window on Windows
-        startupinfo = None
-        if os.name == "nt":
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-
+        child = None
         try:
-            self._proc = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                env=env,
-                startupinfo=startupinfo
+            child = WorkerProcess(
+                py_exe, "--export-worker", runner_script, runner_args, env=env,
             )
+            self._proc = child.process
+            if self._is_cancelled:
+                terminate_process_tree(self._proc)
 
             stdout_lines = []
             result_data = None
 
-            while True:
-                line = self._proc.stdout.readline()
-                if not line and self._proc.poll() is not None:
-                    break
+            for line in child.iter_lines():
                 if line:
                     line_str = line.strip()
                     stdout_lines.append(line_str)
@@ -224,7 +216,7 @@ class ExportWorkerThread(QThread):
                 self.finished.emit(False, "用户取消了导出任务", {})
                 return
 
-            if result_data and result_data.get("success"):
+            if rc == 0 and result_data and result_data.get("success"):
                 exported_path = result_data.get("path", "")
                 self.finished.emit(True, exported_path, result_data)
             else:
@@ -242,6 +234,8 @@ class ExportWorkerThread(QThread):
         except Exception as e:
             self.finished.emit(False, f"启动隔离导出进程失败: {e}", {})
         finally:
+            if child is not None:
+                child.close()
             if self._tmp_cfg_path and os.path.exists(self._tmp_cfg_path):
                 try:
                     os.remove(self._tmp_cfg_path)
@@ -270,6 +264,7 @@ class RunInformationCard(MkCard):
         self.gpu_count = 0
         self.cpu_name = "Generic Processor"
         self.gpu_name = "CPU Only"
+        self._checkpoint_run_info = {}
         self.setObjectName("RunInformationCard")
         self.setMinimumHeight(320)
         self._init_ui()
@@ -363,7 +358,7 @@ class RunInformationCard(MkCard):
         cmd_header = QHBoxLayout()
         self.lbl_cmd_header = QLabel("训练命令 (Command)")
         self.lbl_cmd_header.setFont(QFont("Segoe UI", 10, QFont.Weight.Medium))
-        attach_tooltip(self.lbl_cmd_header, "可直接在终端中复制并执行此命令复现模型训练")
+        attach_tooltip(self.lbl_cmd_header, "根据模型保存的训练配置生成命令；复现需要对应的软件版本和原始数据集")
         cmd_header.addWidget(self.lbl_cmd_header)
         cmd_header.addStretch()
 
@@ -391,6 +386,8 @@ class RunInformationCard(MkCard):
         """Populate the circled fields from task metadata & environment."""
         if not task:
             return
+        self._checkpoint_run_info = task.get("_experiment_data", {})
+        self.lbl_start_title.setText("开始时间" if task.get("start_time") else "模型保存时间")
 
         # 1. 开始时间 (中国标准时间格式: 2026年9月10日 20:45)
         raw_start = task.get("start_time") or task.get("created_at") or ""
@@ -417,6 +414,14 @@ class RunInformationCard(MkCard):
         # 2. Status Badge
         status = str(task.get("status", "SUCCESS")).upper()
         self._set_status_badge(status)
+
+        if self._checkpoint_run_info.get("version"):
+            self.lbl_py_title.setText("Ultralytics 版本")
+            self.lbl_py_val.setText(str(self._checkpoint_run_info["version"]))
+            self._update_hardware_labels("", "")
+            self._load_command(task, save_dir)
+            return
+        self.lbl_py_title.setText("Python 版本")
 
         # 3. Python Version
         py_ver = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
@@ -460,6 +465,16 @@ class RunInformationCard(MkCard):
         self._load_command(task, save_dir)
 
     def _update_hardware_labels(self, cpu_name: str, gpu_name: str):
+        if self._checkpoint_run_info.get("version"):
+            seconds = self._checkpoint_run_info.get("runtime_seconds")
+            self.lbl_cpu_title.setText("训练耗时")
+            self.lbl_cpu_val.setText(f"{int(seconds) // 60} 分 {int(seconds) % 60} 秒" if seconds is not None else "未记录")
+            self.lbl_gpu_title.setText("起始模型")
+            self.lbl_gpu_val.setText(str(self._checkpoint_run_info.get("args", {}).get("model") or "未记录"))
+            fg = "#a6adc8" if self.is_dark else "#64748b"
+            for label in (self.lbl_cpu_title, self.lbl_gpu_title):
+                _MkThemeEngine.apply_style_sheet(label, f"color: {fg}; background: transparent;")
+            return
         lbl_fg = "#a6adc8" if self.is_dark else "#64748b"
         badge_fg = "#60a5fa" if self.is_dark else "#2563eb"
 
@@ -476,6 +491,11 @@ class RunInformationCard(MkCard):
         self.lbl_gpu_val.setText(gpu_name)
 
     def _load_command(self, task: dict, save_dir: str):
+        checkpoint_args = task.get("_experiment_data", {}).get("args", {})
+        if checkpoint_args:
+            self.cmd_text = training_command(checkpoint_args)
+            self.editor_cmd.setPlainText(self.cmd_text)
+            return
         # Load args.yaml if present
         args_data = {}
         if save_dir and os.path.isdir(save_dir):
@@ -904,6 +924,14 @@ class ExperimentDetailView(MkPage):
             auto_height=True,
         )
         layout.addWidget(self.card_training_config)
+        self.card_performance = MkProTable(
+            columns=[{"key": "metric", "label": "评价指标", "sortable": True},
+                     {"key": "value", "label": "模型指标值"}],
+            title="模型评价结果 (Performance Metrics)",
+            auto_height=True, selectable=False, searchable=True,
+            parent=self,
+        )
+        layout.addWidget(self.card_performance)
 
     def _copy_cmd(self):
         if hasattr(self, "card_run_info"):
@@ -941,7 +969,15 @@ class ExperimentDetailView(MkPage):
         # Section 1: Metrics
         lbl_sec1 = QLabel("评估指标曲线 (Metrics)")
         lbl_sec1.setFont(QFont("Segoe UI", 13, QFont.Weight.Bold))
-        cc_layout.addWidget(lbl_sec1)
+        metric_header = QHBoxLayout()
+        metric_header.addWidget(lbl_sec1)
+        metric_header.addStretch()
+        self.metric_scope = QComboBox()
+        for label, value in (("任务主指标", "auto"), ("检测框 (B)", "B"), ("分割掩膜 (M)", "M"), ("关键点 (P)", "P")):
+            self.metric_scope.addItem(label, value)
+        self.metric_scope.currentIndexChanged.connect(lambda _: self._update_all_charts())
+        metric_header.addWidget(self.metric_scope)
+        cc_layout.addLayout(metric_header)
 
         row1 = QHBoxLayout()
         row1.setSpacing(12)
@@ -1774,13 +1810,14 @@ class ExperimentDetailView(MkPage):
             MkMessage.warning(self, "目标文件夹不存在！")
 
     def _on_record_delete(self, record: dict):
-        reply = QMessageBox.question(
+        if MkMessageBox.confirm(
             self,
-            "确认删除",
-            f"确定要删除此导出记录及对应文件吗？\n{record.get('path', '')}",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
-        if reply == QMessageBox.StandardButton.Yes:
+            title="确认删除",
+            content=f"确定要删除此导出记录及对应文件吗？<br><code>{record.get('path', '')}</code>",
+            danger=True,
+            ok_text="删除",
+            cancel_text="取消",
+        ):
             fmt_key = record.get("format", "")
             path = record.get("path", "")
             rec_id = record.get("id", "")
@@ -1813,60 +1850,54 @@ class ExperimentDetailView(MkPage):
     # ── Load Task Logic ──
     # ─────────────────────────────────────────────────────────
     def load_task(self, task_id: int):
-        """Populate experiment view with given task details, metrics, and curves."""
-        self.current_task_id = task_id
-        if self.db:
-            self.current_task = self.db.get_task_by_id(task_id)
+        task = self.db.get_task_by_id(task_id) if self.db else None
+        if task:
+            self._load_experiment(task)
 
-        if not self.current_task:
-            return
+    def load_model(self, model_id: int):
+        model = self.db.get_model_by_id(model_id) if self.db else None
+        if model:
+            self._load_experiment(model_experiment(model))
 
-        task = self.current_task
-        task_name = task.get("task_name", f"exp-{task_id}")
-        model_name = task.get("model_name", "yolo26n-seg.pt")
-        status = task.get("status", "COMPLETED")
-        save_dir = task.get("save_dir", "")
-
-        # 1. Update Header immediately (0ms instant response)
-        self.lbl_task_title.setText(task_name)
-        self.lbl_task_type_tag.setText(model_name)
-        st_color = "#15803d" if status in ("SUCCESS", "COMPLETED") else "#b91c1c"
-        st_bg = "#dcfce7" if status in ("SUCCESS", "COMPLETED") else "#fee2e2"
-        self.lbl_status_badge.setText(status)
-        _MkThemeEngine.apply_style_sheet(self.lbl_status_badge, f"background: {st_bg}; color: {st_color}; font-weight: bold; padding: 3px 8px; border-radius: 4px; font-size: 11px;")
-
-        # 2. Enter Skeleton Shimmer Loading state on all cards
+    def _load_experiment(self, task):
+        enable_component_tooltips(self)
+        self.current_task_id = task["id"]
+        self.current_task = task
+        generation = getattr(self, "_load_generation", 0) + 1
+        self._load_generation = generation
+        self.lbl_task_title.setText(task["task_name"])
+        self.lbl_task_type_tag.setText(task.get("model_name", ""))
+        self.lbl_status_badge.setText(task.get("status", ""))
         self.set_loading(True)
+        from TrainingPlatform.core.env_manager import EnvironmentManager
+        python_exe = EnvironmentManager.get_instance().get_selected_python()
 
-        # 3. Background thread: read results.csv and disk files without blocking GUI
-        def _fetch():
-            import time
-            time.sleep(0.12)  # 平滑微过渡（120ms），保证人眼感知到优雅科技流光过渡，杜绝瞬间白屏闪烁
-            metrics_df = None
-            if save_dir and os.path.isdir(save_dir):
-                csv_path = os.path.join(save_dir, "results.csv")
-                if os.path.isfile(csv_path):
-                    try:
-                        df = pd.read_csv(csv_path)
-                        df.columns = [c.strip() for c in df.columns]
-                        metrics_df = df
-                    except Exception:
-                        pass
-            return metrics_df
+        def fetch():
+            return experiment_data(task, python_exe=python_exe)
 
-        # 4. Main GUI thread callback: render charts, tables and fade out skeleton
-        def _on_loaded(metrics_df):
-            self.current_metrics_df = metrics_df
+        def loaded(data):
+            if self._load_generation != generation:
+                return
+            task["_experiment_data"] = data
+            suffix = f" · v{data['version']}" if data.get("version") else ""
+            self.lbl_task_type_tag.setText(data.get("task", "unknown").capitalize() + suffix)
+            task["weights_path"] = data.get("path") or task.get("weights_path", "")
+            task["dataset_yaml"] = data.get("args", {}).get("data", "")
+            if not task.get("start_time"):
+                task["created_at"] = data.get("date")
+            self.current_metrics_df = pd.DataFrame(data["history"]) if data.get("history") else None
             self._update_kpi_cards(task)
             self._update_overview_tables(task)
             self._update_all_charts()
             self.apply_theme()
-            self._load_task_console(save_dir)
+            self._load_task_console(task.get("save_dir", ""))
+            if data.get("error"):
+                self.train_console.warning(data["error"])
             self._load_dataset_sample_picks(task)
             self._load_export_history()
             self.set_loading(False)
 
-        self.run_async(_fetch, on_success=_on_loaded, auto_loading=False)
+        self.run_async(fetch, on_success=loaded, auto_loading=False)
 
     def apply_theme(self, *args):
         if self.isVisible():
@@ -1877,44 +1908,27 @@ class ExperimentDetailView(MkPage):
         self.set_theme(ThemeEngine.is_dark())
 
     def _update_kpi_cards(self, task: dict):
-        map50_val = 0.0
-        map50_95_val = 0.0
-        prec_val = 0.0
-        rec_val = 0.0
-
-        save_dir = task.get("save_dir", "") if task else ""
-        final_m = {}
-        if save_dir:
-            try:
-                from TrainingPlatform.core.metrics_parser import parse_final_experiment_metrics
-                final_m = parse_final_experiment_metrics(save_dir)
-            except Exception:
-                pass
-
-        if final_m.get("map50", 0.0) > 0.0:
-            map50_val = final_m["map50"]
-            map50_95_val = final_m["map50_95"]
-            prec_val = final_m["precision"]
-            rec_val = final_m["recall"]
-        elif self.current_metrics_df is not None and not self.current_metrics_df.empty:
-            df = self.current_metrics_df
-            for col in df.columns:
-                if "metrics/mAP50(B)" in col or "mAP50(B)" in col:
-                    map50_val = float(df[col].iloc[-1])
-                elif "metrics/mAP50-95(B)" in col or "mAP50-95(B)" in col:
-                    map50_95_val = float(df[col].iloc[-1])
-                elif "metrics/precision(B)" in col or "precision(B)" in col:
-                    prec_val = float(df[col].iloc[-1])
-                elif "metrics/recall(B)" in col or "recall(B)" in col:
-                    rec_val = float(df[col].iloc[-1])
+        data = task.get("_experiment_data", {})
+        task_type = data.get("task", "detect")
+        keys = metric_keys(task_type)
+        if task_type == "classify":
+            pairs = ((self.card_map50, keys[0]), (self.card_map50_95, keys[1]))
+            self.card_precision.hide()
+            self.card_recall.hide()
         else:
-            map50_val = task.get("best_map50", 0.0) or 0.0
-            map50_95_val = task.get("best_map50_95", 0.0) or 0.0
-
-        self.card_map50._lbl_val.setText(f"{map50_val * 100:.1f}%" if map50_val > 0 else "-")
-        self.card_map50_95._lbl_val.setText(f"{map50_95_val * 100:.1f}%" if map50_95_val > 0 else "-")
-        self.card_precision._lbl_val.setText(f"{prec_val * 100:.1f}%" if prec_val > 0 else "-")
-        self.card_recall._lbl_val.setText(f"{rec_val * 100:.1f}%" if rec_val > 0 else "-")
+            self.card_precision.show()
+            self.card_recall.show()
+            map_key = keys[2].replace("mAP50-95", "mAP50")
+            pairs = ((self.card_map50, map_key), (self.card_map50_95, keys[2]),
+                     (self.card_precision, keys[0]), (self.card_recall, keys[1]))
+        saved = data.get("metrics", {})
+        history = data.get("history", {})
+        for card, key in pairs:
+            value = saved.get(key)
+            if value is None and history.get(key):
+                value = history[key][-1]
+            card._lbl_title.setText(key.removeprefix("metrics/"))
+            card._lbl_val.setText(f"{float(value) * 100:.1f}%" if value is not None else "-")
 
     def _update_overview_tables(self, task: dict):
         save_dir = task.get("save_dir", "")
@@ -1926,6 +1940,9 @@ class ExperimentDetailView(MkPage):
         # 2. Hyperparameters — feed into MkProTable
         if hasattr(self, "card_training_config"):
             self._load_hyperparameters_to_table(save_dir, task)
+        if hasattr(self, "card_performance"):
+            metrics = task.get("_experiment_data", {}).get("metrics", {})
+            self.card_performance.set_data([{"metric": key, "value": str(value)} for key, value in metrics.items()])
 
     # ── Hyperparameter dictionary-to-table descriptions ──
     _PARAM_TIPS = {
@@ -1974,8 +1991,8 @@ class ExperimentDetailView(MkPage):
 
     def _load_hyperparameters_to_table(self, save_dir: str, task: dict):
         """Read YOLO args.yaml or fallback configs and feed into MkProTable."""
-        config_dict = {}
-        if save_dir and os.path.isdir(save_dir):
+        config_dict = task.get("_experiment_data", {}).get("args", {}).copy()
+        if not config_dict and save_dir and os.path.isdir(save_dir):
             for fname in ("args.yaml", "hyp.yaml", "train_config.json", "config.json"):
                 fpath = os.path.join(save_dir, fname)
                 if os.path.isfile(fpath):
@@ -2043,10 +2060,21 @@ class ExperimentDetailView(MkPage):
                 }
             }
 
-        self.chart_precision.update_series(get_series("metrics/precision(B)"))
-        self.chart_recall.update_series(get_series("metrics/recall(B)"))
-        self.chart_map50.update_series(get_series("metrics/mAP50(B)"))
-        self.chart_map50_95.update_series(get_series("metrics/mAP50-95(B)"))
+        kind = self.current_task.get("_experiment_data", {}).get("task", "detect")
+        keys = metric_keys(kind, self.metric_scope.currentData() or "auto")
+        if kind == "classify" and self.metric_scope.currentData() == "auto":
+            metric_pairs = ((self.chart_precision, keys[0]), (self.chart_recall, keys[1]))
+            self.chart_map50.hide()
+            self.chart_map50_95.hide()
+        else:
+            self.chart_map50.show()
+            self.chart_map50_95.show()
+            metric_pairs = ((self.chart_precision, keys[0]), (self.chart_recall, keys[1]),
+                            (self.chart_map50, keys[2].replace("mAP50-95", "mAP50")), (self.chart_map50_95, keys[2]))
+        for chart, key in metric_pairs:
+            chart.display_title = key.removeprefix("metrics/")
+            chart.lbl_title.setText(chart.display_title)
+            chart.update_series(get_series(key))
 
         self.chart_box_loss.update_series(get_series("train/box_loss"))
         self.chart_seg_loss.update_series(get_series("train/seg_loss"))
@@ -2124,6 +2152,9 @@ class ExperimentDetailView(MkPage):
             pass
 
     def _get_best_weights_path(self) -> Optional[str]:
+        explicit = (self.current_task or {}).get("weights_path")
+        if explicit:
+            return explicit if os.path.isfile(explicit) else None
         """Find model weights with multiple fallback options."""
         workspace_root = os.path.normpath(
             os.path.join(os.path.dirname(__file__), "..", "..", "..")

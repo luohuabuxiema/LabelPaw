@@ -7,12 +7,12 @@ from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 import os
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                QTableWidget, QTableWidgetItem, QHeaderView,
-                               QFileDialog, QMessageBox, QDialog, QFrame,
+                               QFileDialog, QDialog, QFrame,
                                QPushButton, QGraphicsDropShadowEffect)
 from PySide6.QtGui import QColor
 from PySide6.QtCore import Qt, QPoint
 
-from monkeyqt import MkCard, MkButton, MkInput, MkComboBox, MkForm, MkAlert, MkQWidget
+from monkeyqt import MkCard, MkButton, MkInput, MkComboBox, MkForm, MkAlert, MkQWidget, MkMessageBox
 from monkeyqt_icons import PhWrench, PhUploadSimple, PhX
 from TrainingPlatform.core.dataset_inspector import DatasetInspector
 
@@ -159,9 +159,10 @@ class ImportDatasetDialog(QDialog):
                 DatasetInspector.extract_zip(zip_f, target_dir)
                 self.input_path.setText(target_dir)
                 self.run_inspection(target_dir)
-                QMessageBox.information(self, "成功", f"Zip 解压完成，存放至:\n{target_dir}")
+                info_text = f"Zip 解压完成，存放至:<br>{target_dir}"
+                MkMessageBox.success(self, "成功", info_text)
             except Exception as e:
-                QMessageBox.critical(self, "解压失败", str(e))
+                MkMessageBox.error(self, "解压失败", str(e))
 
     def run_inspection(self, path):
         res = DatasetInspector.inspect(path)
@@ -262,14 +263,14 @@ class DatasetView(MkQWidget):
     def open_import_dialog(self):
         projects = self.db.get_projects()
         if not projects:
-            QMessageBox.warning(self, "提示", "请先在【项目管理】中创建一个训练项目！")
+            MkMessageBox.warning(self, "提示", "请先在【项目管理】中创建一个训练项目！", cancel_text=None)
             return
 
         dlg = ImportDatasetDialog(projects, self)
         if dlg.exec():
             data = dlg.get_data()
             if not data["name"] or not data["path"]:
-                QMessageBox.warning(self, "警告", "数据集名称和路径不能为空！")
+                MkMessageBox.warning(self, "警告", "数据集名称和路径不能为空！", cancel_text=None)
                 return
 
             insp = data["inspection"] or DatasetInspector.inspect(data["path"])
@@ -299,11 +300,9 @@ class DatasetView(MkQWidget):
                 self.tool_win = DatasetToolView()
                 self.tool_win.show()
         except Exception as e:
-            QMessageBox.critical(self, "错误", f"无法切换至数据集转换工具: {str(e)}")
+            MkMessageBox.error(self, "错误", f"无法切换至数据集转换工具: {str(e)}")
 
     def delete_dataset(self, dataset_id):
-        reply = QMessageBox.question(self, "确认删除", "确定要删除该数据集记录吗？",
-                                     QMessageBox.Yes | QMessageBox.No)
-        if reply == QMessageBox.Yes:
+        if MkMessageBox.confirm(self, "确认删除", "确定要删除该数据集记录吗？", danger=True, ok_text="删除", cancel_text="取消"):
             self.db.delete_dataset(dataset_id)
             self.refresh_datasets()

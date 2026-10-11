@@ -10,12 +10,48 @@ import json
 import time
 import argparse
 import traceback
+from contextlib import contextmanager
 
-def main():
+if __package__:
+    from .worker_runtime import prepare_runner_paths
+else:
+    from worker_runtime import prepare_runner_paths
+
+
+@contextmanager
+def _torchscript_save_compat(export_format):
+    """Torch 2.5's native Windows writer can reject existing non-ASCII paths."""
+    if os.name != "nt" or export_format != "torchscript":
+        yield
+        return
+    import torch
+    original_save = torch.jit.ScriptModule.save
+
+    def save(module, path, **kwargs):
+        if isinstance(path, (str, os.PathLike)) and not os.fsdecode(path).isascii():
+            # Python opens the Unicode path; Torch writes the serialized archive to it.
+            with open(path, "wb") as output:
+                return torch.jit.save(module, output, **kwargs)
+        return original_save(module, path, **kwargs)
+
+    torch.jit.ScriptModule.save = save
+    try:
+        yield
+    finally:
+        torch.jit.ScriptModule.save = original_save
+
+
+def main(argv=None):
+    if sys.platform == "win32":
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
     parser = argparse.ArgumentParser(description="YOLO Model Export Subprocess Runner")
     parser.add_argument("--weights", type=str, required=True, help="Path to best.pt weights")
     parser.add_argument("--config", type=str, required=True, help="Path to JSON file containing export params")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     # Prevent OpenMP runtime library conflict on Windows
     os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
@@ -26,12 +62,7 @@ def main():
     warnings.filterwarnings("ignore")
 
     # Ensure virtual environment packages take precedence
-    workspace = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-    while workspace in sys.path:
-        sys.path.remove(workspace)
-    while "" in sys.path:
-        sys.path.remove("")
-    sys.path.append(workspace)
+    workspace = prepare_runner_paths(__file__)
 
     print(f"[ExportRunner] 启动模型导出隔离进程", flush=True)
     print(f"[ExportRunner] Python 解释器: {sys.executable}", flush=True)
@@ -73,13 +104,15 @@ def main():
 
         try:
             print(f"[ExportRunner] 开始调用 YOLO.export 参数: {export_kwargs}", flush=True)
-            exported_path = model.export(**export_kwargs)
+            with _torchscript_save_compat(export_kwargs["format"]):
+                exported_path = model.export(**export_kwargs)
         except Exception as e_exp:
             if export_kwargs.get("simplify"):
                 print(f"[ExportRunner] 算子精简优化 (simplify) 异常 ({e_exp})，正在自动切换为常规模式重试...", flush=True)
                 export_kwargs["simplify"] = False
                 params["simplify"] = False
-                exported_path = model.export(**export_kwargs)
+                with _torchscript_save_compat(export_kwargs["format"]):
+                    exported_path = model.export(**export_kwargs)
             else:
                 raise e_exp
 

@@ -5,7 +5,7 @@ Using MonkeyQt MkForm (top-aligned labels), MkInput, MkComboBox, MkButton, MkMes
 """
 from monkeyqt.themes.engine import ThemeEngine as _MkThemeEngine
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
-                               QWidget, QMessageBox, QFrame, QPushButton,
+                               QWidget, QFrame, QPushButton,
                                QGraphicsDropShadowEffect)
 from PySide6.QtGui import QColor
 from PySide6.QtCore import Qt, Signal, QPoint
@@ -87,14 +87,6 @@ class ProjectCreateDialog(QDialog):
         self.input_name = MkInput(placeholder="例如: PCB缺陷检测_v1 / Industrial_Screw")
         self.form.add_row("项目名称 (Project Name) *", self.input_name)
 
-        self.combo_task = MkComboBox()
-        self.combo_task.addItem("detect (目标检测 - Bounding Box)", "detect")
-        self.combo_task.addItem("segment (实例分割 - Polygon Mask)", "segment")
-        self.combo_task.addItem("classify (图像分类 - Classification)", "classify")
-        self.combo_task.addItem("pose (关键点姿态估计 - Keypoints)", "pose")
-        self.combo_task.addItem("obb (旋转框目标检测 - Oriented BBox)", "obb")
-        self.form.add_row("视觉任务类型 (Task Type) *", self.combo_task)
-
         self.input_desc = MkInput(placeholder="简述项目目标、应用场景或实验设想 (可选)...")
         self.form.add_row("项目描述 (Description)", self.input_desc)
 
@@ -124,7 +116,7 @@ class ProjectCreateDialog(QDialog):
             self.input_name.setFocus()
             return
 
-        task_type = self.combo_task.currentData()
+        task_type = "mixed"
         desc = self.input_desc.text().strip()
 
         try:

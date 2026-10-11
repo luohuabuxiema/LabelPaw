@@ -10,14 +10,26 @@ import json
 import argparse
 import traceback
 
-def main():
+if __package__:
+    from .worker_runtime import prepare_runner_paths
+else:
+    from worker_runtime import prepare_runner_paths
+
+
+def main(argv=None):
+    if sys.platform == "win32":
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
     parser = argparse.ArgumentParser(description="YOLO Training Subprocess Runner")
     parser.add_argument("--task-id", type=int, required=True)
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--data", type=str, required=True)
     parser.add_argument("--save-dir", type=str, required=True)
     parser.add_argument("--config-file", type=str, required=True)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     # Ignore harmless dependency warnings from requests/urllib3 in python environment
     import warnings
@@ -25,12 +37,7 @@ def main():
     warnings.filterwarnings("ignore", category=UserWarning, module="requests")
 
     # Ensure virtual environment packages (like ultralytics) take precedence over workspace root
-    workspace = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-    while workspace in sys.path:
-        sys.path.remove(workspace)
-    while "" in sys.path:
-        sys.path.remove("")
-    sys.path.append(workspace)
+    workspace = prepare_runner_paths(__file__)
 
     print(f"[Runner] 启动 YOLO 训练执行器 (Task ID: {args.task_id})", flush=True)
     print(f"[Runner] Python 解释器: {sys.executable}", flush=True)
@@ -155,8 +162,15 @@ def main():
         }
 
         for k, v in config_dict.items():
-            if v is not None and k not in ("project", "name", "exist_ok", "plots", "verbose", "data", "python_exe"):
+            if v is not None and k not in ("project", "name", "exist_ok", "plots", "verbose", "data", "python_exe", "cli_command", "task_id", "task_name", "model_name", "cls_remap"):
                 train_args[k] = v
+
+        device = train_args.get("device")
+        multiple_devices = (
+            isinstance(device, (list, tuple)) and len(device) > 1
+        ) or (isinstance(device, str) and "," in device)
+        if getattr(sys, "frozen", False) and multiple_devices:
+            raise ValueError("内置运行环境支持 CPU 或单 GPU；多 GPU 分布式训练请选用外部 Python 环境")
 
         print("[Runner] 正在执行 model.train(...) ...", flush=True)
         results = model.train(**train_args)
