@@ -174,14 +174,14 @@ def main(argv=None):
 
         print("[Runner] 正在执行 model.train(...) ...", flush=True)
         results = model.train(**train_args)
-        print("__TRAIN_SUCCESS__", flush=True)
+        print("\n__TRAIN_SUCCESS__", flush=True)
         print("[SUCCESS] [Runner] YOLO 模型训练成功完成！", flush=True)
         sys.exit(0)
 
     except Exception as e:
         err = traceback.format_exc()
         print(f"[ERROR] [Runner] 训练异常:\n{err}", flush=True)
-        print(f"__TRAIN_FAILED__{str(e)}", flush=True)
+        print(f"\n__TRAIN_FAILED__{str(e)}", flush=True)
         sys.exit(1)
 
 if __name__ == "__main__":

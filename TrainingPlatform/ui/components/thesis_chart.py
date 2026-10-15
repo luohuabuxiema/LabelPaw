@@ -18,9 +18,10 @@ import os
 from typing import Dict, List, Optional, Tuple
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                QToolButton, QDialog, QFileDialog, QSizePolicy,
-                               QFrame, QGraphicsDropShadowEffect, QMenu, QApplication)
-from PySide6.QtCore import Qt, Signal, QPoint
-from PySide6.QtGui import QFont, QColor, QCursor, QPainter, QImage
+                               QFrame, QGraphicsDropShadowEffect, QMenu, QApplication,
+                               QScrollArea)
+from PySide6.QtCore import Qt, Signal, QPoint, QRect, QRectF, QTimer
+from PySide6.QtGui import QFont, QColor, QCursor, QPainter, QImage, QBrush, QLinearGradient
 
 import matplotlib
 matplotlib.use("QtAgg")
@@ -94,6 +95,8 @@ class ThesisChartCanvas(FigureCanvas):
         self._theme_frames = {}
         self._theme_frame = None
         self._theme_redraw_pending = False
+        self._rendered_frame = None
+        self._resize_layout_pending = False
         self.is_dark = is_dark
         self.plot_title = title
         self.y_label_text = y_label
@@ -106,6 +109,10 @@ class ThesisChartCanvas(FigureCanvas):
 
         self.fig = Figure(figsize=(4.8, 3.2), dpi=100, facecolor=self.bg_color)
         super().__init__(self.fig)
+        self._resize_timer = QTimer(self)
+        self._resize_timer.setSingleShot(True)
+        self._resize_timer.setInterval(80)
+        self._resize_timer.timeout.connect(self._finish_resize)
         self.setParent(parent)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setMinimumHeight(160)
@@ -114,6 +121,7 @@ class ThesisChartCanvas(FigureCanvas):
 
         self.ax = self.fig.add_subplot(111)
         self._apply_thesis_style()
+        self._update_layout_for_size()
 
         # Child tooltip overlay
         self.tooltip = ChartHoverTooltip(self)
@@ -128,6 +136,26 @@ class ThesisChartCanvas(FigureCanvas):
         self.mpl_connect("motion_notify_event", self._on_mouse_move)
         self.mpl_connect("axes_leave_event", self._on_mouse_leave)
         self.mpl_connect("figure_leave_event", self._on_mouse_leave)
+
+    def wheelEvent(self, event):
+        """Forward mouse wheel events to parent QScrollArea so dashboard can scroll naturally."""
+        try:
+            super().wheelEvent(event)
+        except Exception:
+            pass
+
+        p = self.parent()
+        scroll_area = None
+        while p:
+            if isinstance(p, QScrollArea):
+                scroll_area = p
+                break
+            p = p.parent()
+
+        if scroll_area is not None:
+            QApplication.sendEvent(scroll_area.viewport(), event)
+        else:
+            event.ignore()
 
     def enterEvent(self, event):
         super().enterEvent(event)
@@ -167,6 +195,8 @@ class ThesisChartCanvas(FigureCanvas):
 
     def _update_layout_for_size(self):
         """Dynamically adapt tick padding, label font sizes, and figure margins based on canvas height so x-axis & Epoch are never clipped."""
+        if self._resize_layout_pending:
+            return
         try:
             dpr = getattr(self, "device_pixel_ratio", 1.0)
             if hasattr(self, "devicePixelRatioF"):
@@ -205,19 +235,54 @@ class ThesisChartCanvas(FigureCanvas):
             pass
 
     def resizeEvent(self, event):
+        # Qt needs to finish resizing the window chrome before expensive Agg
+        # rendering. Keep the last owned frame while consecutive sizes arrive.
+        # The first frame still uses the normal immediate drawing path.
+        if self._rendered_frame is not None:
+            self._resize_layout_pending = True
+            self._theme_frames.clear()
+            self._theme_frame = None
+            if self.isVisible() and not self.visibleRegion().isEmpty():
+                self._resize_timer.start()
         super().resizeEvent(event)
+        if not self._resize_layout_pending:
+            self._update_layout_for_size()
+
+    def _finish_resize(self):
+        if not self._resize_layout_pending:
+            return
+        if not self.isVisible() or self.visibleRegion().isEmpty():
+            # A chart below the scroll viewport can wait until it is exposed.
+            return
+        self._resize_layout_pending = False
+        # A previously queued Matplotlib idle draw may have been deferred.
+        self._draw_pending = False
         self._update_layout_for_size()
+        self.draw_idle()
+
+    def _draw_idle(self):
+        if self._resize_layout_pending:
+            return
+        super()._draw_idle()
 
     def paintEvent(self, event):
-        self._draw_idle()
-
-        if not hasattr(self, 'renderer'):
-            return
+        resizing = self._resize_layout_pending
+        if not resizing:
+            self._draw_idle()
 
         painter = QPainter(self)
         try:
             # Completely fill canvas background to prevent ghost trails during moving / resizing
             painter.fillRect(self.rect(), QColor(self.bg_color))
+            if resizing:
+                if self._rendered_frame is not None:
+                    painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+                    painter.drawImage(QRectF(self.rect()), self._rendered_frame)
+                if not self._resize_timer.isActive():
+                    self._resize_timer.start()
+                return
+            if not hasattr(self, 'renderer'):
+                return
             qimage = self._theme_frame
             if qimage is None:
                 buf = self.buffer_rgba()
@@ -242,6 +307,7 @@ class ThesisChartCanvas(FigureCanvas):
         buf = self.buffer_rgba()
         frame = QImage(buf, buf.shape[1], buf.shape[0], QImage.Format.Format_RGBA8888).copy()
         frame.setDevicePixelRatio(self.device_pixel_ratio)
+        self._rendered_frame = frame
         key = self._theme_frame_key()
         self._theme_frames = {k: v for k, v in self._theme_frames.items() if k[1:] == key[1:]}
         self._theme_frames[key] = frame
@@ -256,6 +322,7 @@ class ThesisChartCanvas(FigureCanvas):
     def _draw_theme(self):
         self._theme_frame = self._theme_frames.get(self._theme_frame_key())
         if self._theme_frame is not None and not self._draw_pending:
+            self._rendered_frame = self._theme_frame
             self.update()
         else:
             self._theme_redraw_pending = True
@@ -287,8 +354,6 @@ class ThesisChartCanvas(FigureCanvas):
         self.ax.set_xlabel("Epoch", fontsize=9.5, color=self.muted_text, fontweight="medium", labelpad=4)
         if self.y_label_text:
             self.ax.set_ylabel(self.y_label_text, fontsize=9.5, color=self.muted_text, fontweight="medium", labelpad=4)
-
-        self._update_layout_for_size()
 
     def _apply_thesis_colors(self):
         """Quickly update colors on theme switch without expensive tight_layout recalculation."""
@@ -367,7 +432,9 @@ class ThesisChartCanvas(FigureCanvas):
 
             color = data.get("color") or ACADEMIC_COLORS[idx % len(ACADEMIC_COLORS)]
             lw = self.HOVER_LINEWIDTH if self._is_chart_hovered else self.DEFAULT_LINEWIDTH
+            linestyle = data.get("linestyle", "-")
             line, = self.ax.plot(epochs, values, label=name, color=color, linewidth=lw,
+                                 linestyle=linestyle,
                                  solid_capstyle="round", solid_joinstyle="round", antialiased=True)
             self.series_lines.append((name, line, color))
             
@@ -398,7 +465,7 @@ class ThesisChartCanvas(FigureCanvas):
                 y_pad = max((max_y - min_y) * 0.1, 0.05)
                 self.ax.set_ylim(bottom=max(0.0, min_y - y_pad * 0.5), top=min(1.0, max_y + y_pad))
 
-        self._update_layout_for_size()
+        self.draw_idle()
 
     def _on_mouse_move(self, event):
         if event.inaxes != self.ax or not self.series_data or not self.hover_dots:
@@ -672,6 +739,21 @@ class ThesisChartCard(MkQWidget):
         self._apply_card_style()
         self._update_toolbutton_styles()
 
+    def wheelEvent(self, event):
+        """Forward mouse wheel events to parent QScrollArea."""
+        p = self.parent()
+        scroll_area = None
+        while p:
+            if isinstance(p, QScrollArea):
+                scroll_area = p
+                break
+            p = p.parent()
+
+        if scroll_area is not None:
+            QApplication.sendEvent(scroll_area.viewport(), event)
+        else:
+            event.ignore()
+
     def enterEvent(self, event):
         super().enterEvent(event)
         if hasattr(self, "canvas") and self.canvas:
@@ -768,9 +850,33 @@ class ThesisChartCard(MkQWidget):
         self._update_toolbutton_styles()
         self.canvas.set_theme(is_dark)
 
+    def is_in_viewport(self) -> bool:
+        """Check if this chart card intersects the visible viewport of its parent scroll area."""
+        if not self.isVisible():
+            return False
+        p = self.parentWidget()
+        scroll_area = None
+        while p is not None:
+            if isinstance(p, QScrollArea):
+                scroll_area = p
+                break
+            p = p.parentWidget()
+        if scroll_area is None:
+            return True
+        vp = scroll_area.viewport()
+        top_left = self.mapTo(vp, QPoint(0, 0))
+        card_rect = QRect(top_left, self.size())
+        # 120px buffer above and below for smooth scroll anticipation
+        vp_rect = vp.rect().adjusted(0, -120, 0, 120)
+        return vp_rect.intersects(card_rect)
+
     def update_series(self, series_dict: Dict[str, Dict]):
-        """Update multi-model curves data and redraw."""
+        """Update multi-model curves data and redraw (lazy rendering if hidden or offscreen)."""
         self.series_data = series_dict or {}
+        if not self.is_in_viewport():
+            self._pending_render = True
+            return
+        self._pending_render = False
         self.canvas.render_series(self.series_data)
 
     def open_fullscreen(self):
@@ -822,40 +928,48 @@ class ThesisChartCard(MkQWidget):
         super().hideEvent(event)
 
     def showEvent(self, event):
+        super().showEvent(event)
+        if getattr(self, "_pending_render", False) and self.is_in_viewport():
+            self._pending_render = False
+            self.canvas.render_series(self.series_data)
         if getattr(self, "_loading", False):
             if hasattr(self, "_shimmer_timer") and self._shimmer_timer and not self._shimmer_timer.isActive():
                 self._shimmer_timer.start()
-        super().showEvent(event)
 
     def paintEvent(self, event):
         super().paintEvent(event)
+        if getattr(self, "_pending_render", False) and self.is_in_viewport():
+            self._pending_render = False
+            self.canvas.render_series(self.series_data)
         if getattr(self, "_loading", False):
-            from PySide6.QtGui import QLinearGradient
-            painter = QPainter(self)
-            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-            is_dark = self.is_dark
-            base_color = QColor(36, 36, 42) if is_dark else QColor(241, 245, 249)
-            highlight_color = QColor(54, 54, 64, 200) if is_dark else QColor(255, 255, 255, 230)
-            rect = self.rect()
-            pad_x = 14.0
-            content_w = max(10.0, float(rect.width() - pad_x * 2))
-            content_h = max(10.0, float(rect.height() - 24.0))
+            try:
+                painter = QPainter(self)
+                painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+                is_dark = self.is_dark
+                base_color = QColor(36, 36, 42) if is_dark else QColor(241, 245, 249)
+                highlight_color = QColor(54, 54, 64, 200) if is_dark else QColor(255, 255, 255, 230)
+                rect = self.rect()
+                pad_x = 14.0
+                content_w = max(10.0, float(rect.width() - pad_x * 2))
+                content_h = max(10.0, float(rect.height() - 24.0))
 
-            blocks = [
-                QRectF(pad_x, 14.0, min(120.0, content_w * 0.45), 14.0),
-                QRectF(pad_x, 38.0, content_w, content_h - 26.0)
-            ]
-            painter.setPen(Qt.PenStyle.NoPen)
-            shimmer_prog = getattr(self, "_shimmer_progress", 0.0)
-            sweep_x = float(rect.left()) + float(rect.width() + 200) * shimmer_prog - 100.0
-            gradient_width = max(120.0, float(rect.width()) * 0.45)
+                blocks = [
+                    QRectF(pad_x, 14.0, min(120.0, content_w * 0.45), 14.0),
+                    QRectF(pad_x, 38.0, content_w, content_h - 26.0)
+                ]
+                painter.setPen(Qt.PenStyle.NoPen)
+                shimmer_prog = getattr(self, "_shimmer_progress", 0.0)
+                sweep_x = float(rect.left()) + float(rect.width() + 200) * shimmer_prog - 100.0
+                gradient_width = max(120.0, float(rect.width()) * 0.45)
 
-            for block in blocks:
-                rad = 6.0 if block.height() > 20.0 else 4.0
-                grad = QLinearGradient(sweep_x - gradient_width, 0, sweep_x + gradient_width, 0)
-                grad.setColorAt(0.0, base_color)
-                grad.setColorAt(0.5, highlight_color)
-                grad.setColorAt(1.0, base_color)
-                painter.setBrush(QBrush(grad))
-                painter.drawRoundedRect(block, rad, rad)
-            painter.end()
+                for block in blocks:
+                    rad = 6.0 if block.height() > 20.0 else 4.0
+                    grad = QLinearGradient(sweep_x - gradient_width, 0, sweep_x + gradient_width, 0)
+                    grad.setColorAt(0.0, base_color)
+                    grad.setColorAt(0.5, highlight_color)
+                    grad.setColorAt(1.0, base_color)
+                    painter.setBrush(QBrush(grad))
+                    painter.drawRoundedRect(block, rad, rad)
+                painter.end()
+            except Exception:
+                pass

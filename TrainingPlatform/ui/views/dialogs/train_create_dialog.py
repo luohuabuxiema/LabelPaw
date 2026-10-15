@@ -2231,9 +2231,119 @@ class TrainCreateDialog(QDialog):
         self.adv_header_bar.clicked.connect(self._toggle_advanced_settings)
         c_layout.addWidget(self.adv_header_bar)
 
-        # Advanced container (Unified view without navigation bar)
+        # Advanced container (Unified view without navigation bar) - Lazy initialized
         self.adv_container = QFrame()
         self.adv_container.setObjectName("AdvContainer")
+        self.adv_container.setVisible(False)
+        c_layout.addWidget(self.adv_container)
+        self._adv_built = False
+
+
+        # ── 5. Device & Environment Summary Card ──
+        self.card_device = QFrame()
+        self.card_device.setObjectName("DeviceCard")
+        l_dev = QVBoxLayout(self.card_device)
+        l_dev.setContentsMargins(22, 14, 18, 14)
+        l_dev.setSpacing(10)
+
+        dev_top = QHBoxLayout()
+        dev_top.setSpacing(8)
+
+        # Tab Segmented Pill (referencing Fig 2)
+        self.pill_toggle = SegmentedPillToggle([
+            (PhDesktop, "本地单机训练"),
+            (PhSliders, "运行环境选择")
+        ], self.card_device, is_dark=ThemeEngine.is_dark())
+        dev_top.addWidget(self.pill_toggle)
+        dev_top.addStretch()
+
+        # Device combo
+        self.lbl_target_dev = QLabel("计算加速设备:")
+        _MkThemeEngine.apply_style_sheet(self.lbl_target_dev, "background: transparent; border: none;")
+        self.combo_device = RoundedComboBox(self.card_device, is_dark=ThemeEngine.is_dark())
+        self.combo_device.addItems(["0 (GPU 0)", "CPU"])
+        self.combo_device.setFixedWidth(185)
+        dev_top.addWidget(self.lbl_target_dev)
+        dev_top.addWidget(self.combo_device)
+
+        l_dev.addLayout(dev_top)
+
+        # ── Stacked Pages: Page 0 = Terminal CLI, Page 1 = Environment Selector & Console ──
+        self.device_stack = QStackedWidget(self.card_device)
+
+        # Page 0: Terminal Command Display Block (Read-only, copyable)
+        self.page_cli = QWidget()
+        l_cli = QVBoxLayout(self.page_cli)
+        l_cli.setContentsMargins(0, 2, 0, 0)
+        l_cli.setSpacing(6)
+
+        cli_header = QHBoxLayout()
+        cli_header.setSpacing(8)
+        self.lbl_cli_title = QLabel("终端运行指令 (Run in terminal)")
+        _MkThemeEngine.apply_style_sheet(self.lbl_cli_title, "font-size: 12px; font-weight: 600; color: #64748b; background: transparent; border: none;")
+        cli_header.addWidget(self.lbl_cli_title)
+        cli_header.addStretch()
+
+        self.combo_cli_shell = RoundedComboBox(self.page_cli, is_dark=ThemeEngine.is_dark())
+        self.combo_cli_shell.setFixedWidth(135)
+        self.combo_cli_shell.addItems(["单行 (推荐/通用)", "CMD (^)", "PowerShell (`)", "Bash (\\)"])
+        self.combo_cli_shell.currentIndexChanged.connect(self._update_cli_command)
+        cli_header.addWidget(self.combo_cli_shell)
+
+        l_cli.addLayout(cli_header)
+
+        self.cli_viewer = CliCommandViewer(self.page_cli)
+        if hasattr(self, "yaml_editor") and hasattr(self.yaml_editor, "sync_to_local_files"):
+            self.cli_viewer._on_copy_hook = self.yaml_editor.sync_to_local_files
+        l_cli.addWidget(self.cli_viewer)
+        self.device_stack.addWidget(self.page_cli)
+
+        # Page 1: Reusable Environment Selector Card
+        self.env_selector = EnvironmentSelectorWidget(self.card_device, is_dark=ThemeEngine.is_dark())
+        self.env_selector.env_changed.connect(self._on_env_changed)
+        self.device_stack.addWidget(self.env_selector)
+
+        l_dev.addWidget(self.device_stack)
+
+        # Wire toggle to stack
+        self.pill_toggle.tab_changed.connect(self.device_stack.setCurrentIndex)
+
+        self.scroll.setWidget(self.scroll_container)
+        self.scroll.viewport().setAutoFillBackground(False)
+        self.scroll_container.setAutoFillBackground(False)
+        main_layout.addWidget(self.scroll, stretch=1)
+        main_layout.addWidget(self.card_device)
+
+        # ── 6. Bottom Action Bar ──
+        self.footer_widget = QFrame()
+        self.footer_widget.setObjectName("DialogFooter")
+        btn_layout = QHBoxLayout(self.footer_widget)
+        btn_layout.setContentsMargins(0, 12, 0, 0)
+        btn_layout.setSpacing(12)
+        btn_layout.addStretch()
+
+        self.btn_cancel = QPushButton("取消")
+        self.btn_cancel.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_cancel.clicked.connect(self.reject)
+        btn_layout.addWidget(self.btn_cancel)
+
+        self.btn_start = QPushButton("开始训练")
+        self.btn_start.setIcon(PhPlay.fill(size=12, color="#ffffff"))
+        self.btn_start.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_start.clicked.connect(self.handle_start_training)
+        btn_layout.addWidget(self.btn_start)
+
+        main_layout.addWidget(self.footer_widget)
+
+        self._connect_cli_command_signals()
+        self._update_cli_command()
+
+    def _ensure_adv_built(self):
+        """Lazily initialize advanced hyperparameter inputs on first expansion."""
+        if getattr(self, "_adv_built", False):
+            return
+        self._adv_built = True
+
         _MkThemeEngine.apply_style_sheet(self.adv_container, """
             QFrame#AdvContainer {
                 background-color: transparent;
@@ -2249,25 +2359,44 @@ class TrainCreateDialog(QDialog):
 
         # Reset button inside advanced container
         self.btn_reset_defaults = QPushButton("恢复默认参数")
-        self.btn_reset_defaults.setIcon(PhArrowCounterClockwise.regular(size=12, color="#64748b"))
+        is_dark = ThemeEngine.is_dark()
+        self.btn_reset_defaults.setIcon(PhArrowCounterClockwise.regular(size=12, color="#cbd5e1" if is_dark else "#64748b"))
         self.btn_reset_defaults.setToolTip("恢复官方推荐默认超参数配置")
         self.btn_reset_defaults.setCursor(Qt.CursorShape.PointingHandCursor)
-        _MkThemeEngine.apply_style_sheet(self.btn_reset_defaults, """
-            QPushButton {
-                border: 1px solid #e2e8f0;
-                background-color: #ffffff;
-                color: #64748b;
-                font-size: 12px;
-                font-weight: 500;
-                border-radius: 6px;
-                padding: 3px 10px;
-            }
-            QPushButton:hover {
-                background-color: #f8fafc;
-                color: #0f172a;
-                border-color: #cbd5e1;
-            }
-        """)
+        if is_dark:
+            _MkThemeEngine.apply_style_sheet(self.btn_reset_defaults, """
+                QPushButton {
+                    border: 1px solid #3f3f46;
+                    background-color: #27272a;
+                    color: #cbd5e1;
+                    font-size: 12px;
+                    font-weight: 500;
+                    border-radius: 6px;
+                    padding: 3px 10px;
+                }
+                QPushButton:hover {
+                    background-color: #3f3f46;
+                    color: #ffffff;
+                    border-color: #52525b;
+                }
+            """)
+        else:
+            _MkThemeEngine.apply_style_sheet(self.btn_reset_defaults, """
+                QPushButton {
+                    border: 1px solid #e2e8f0;
+                    background-color: #ffffff;
+                    color: #64748b;
+                    font-size: 12px;
+                    font-weight: 500;
+                    border-radius: 6px;
+                    padding: 3px 10px;
+                }
+                QPushButton:hover {
+                    background-color: #f8fafc;
+                    color: #0f172a;
+                    border-color: #cbd5e1;
+                }
+            """)
         self.btn_reset_defaults.clicked.connect(self.reset_to_defaults)
 
         # ── Section 1: 优化器与学习率 ──
@@ -2284,7 +2413,7 @@ class TrainCreateDialog(QDialog):
         box_opt.setContentsMargins(0, 0, 0, 0)
         box_opt.setSpacing(4)
         header_opt = self._create_field_header("优化器算法 (optimizer)", "选择优化器算法。可选 auto, SGD, MuSGD, Adam, AdamW, NAdam, RAdam, RMSProp 等，auto 会根据模型自动选择")
-        self.combo_optimizer = RoundedComboBox(is_dark=ThemeEngine.is_dark())
+        self.combo_optimizer = RoundedComboBox(is_dark=is_dark)
         self.combo_optimizer.addItems(["auto", "SGD", "Adam", "AdamW", "RMSProp", "NAdam"])
         self.combo_optimizer.setCurrentText(str(DEFAULT_TRAIN_SETTINGS["optimizer"]))
         box_opt.addWidget(header_opt)
@@ -2464,107 +2593,49 @@ class TrainCreateDialog(QDialog):
             g.setColumnStretch(1, 1)
             g.setColumnStretch(2, 1)
 
-        self.adv_container.setVisible(False)
-        c_layout.addWidget(self.adv_container)
+        # Style newly created elements according to current theme
+        self.apply_theme()
 
-        # ── 5. Device & Environment Summary Card ──
-        self.card_device = QFrame()
-        self.card_device.setObjectName("DeviceCard")
-        l_dev = QVBoxLayout(self.card_device)
-        l_dev.setContentsMargins(22, 14, 18, 14)
-        l_dev.setSpacing(10)
+        # Connect CLI signals for newly created fields
+        adv_inputs = [
+            getattr(self, "input_lr0", None), getattr(self, "input_lrf", None),
+            getattr(self, "input_momentum", None), getattr(self, "input_weight_decay", None),
+            getattr(self, "input_warmup_epochs", None), getattr(self, "input_warmup_momentum", None),
+            getattr(self, "input_warmup_bias_lr", None), getattr(self, "input_patience", None),
+            getattr(self, "input_close_mosaic", None), getattr(self, "input_save_period", None),
+            getattr(self, "input_seed", None), getattr(self, "input_fraction", None),
+            getattr(self, "input_nbs", None), getattr(self, "input_freeze", None),
+            getattr(self, "input_multi_scale", None), getattr(self, "input_box", None),
+            getattr(self, "input_cls", None), getattr(self, "input_dfl", None),
+            getattr(self, "input_cls_pw", None), getattr(self, "input_max_det", None),
+            getattr(self, "input_mosaic", None), getattr(self, "input_mixup", None),
+            getattr(self, "input_cutmix", None), getattr(self, "input_bgr", None),
+            getattr(self, "input_hsv_h", None), getattr(self, "input_hsv_s", None),
+            getattr(self, "input_hsv_v", None), getattr(self, "input_degrees", None),
+            getattr(self, "input_translate", None), getattr(self, "input_scale", None),
+            getattr(self, "input_shear", None), getattr(self, "input_perspective", None),
+            getattr(self, "input_fliplr", None), getattr(self, "input_flipud", None),
+        ]
+        for inp in adv_inputs:
+            if inp is not None:
+                inp.textChanged.connect(self._update_cli_command)
 
-        dev_top = QHBoxLayout()
-        dev_top.setSpacing(8)
+        if hasattr(self, "combo_optimizer"):
+            self.combo_optimizer.currentIndexChanged.connect(self._update_cli_command)
 
-        # Tab Segmented Pill (referencing Fig 2)
-        self.pill_toggle = SegmentedPillToggle([
-            (PhDesktop, "本地单机训练"),
-            (PhSliders, "运行环境选择")
-        ], self.card_device, is_dark=ThemeEngine.is_dark())
-        dev_top.addWidget(self.pill_toggle)
-        dev_top.addStretch()
-
-        # Device combo
-        self.lbl_target_dev = QLabel("计算加速设备:")
-        _MkThemeEngine.apply_style_sheet(self.lbl_target_dev, "background: transparent; border: none;")
-        self.combo_device = RoundedComboBox(self.card_device, is_dark=ThemeEngine.is_dark())
-        self.combo_device.addItems(["0 (GPU 0)", "CPU"])
-        self.combo_device.setFixedWidth(185)
-        dev_top.addWidget(self.lbl_target_dev)
-        dev_top.addWidget(self.combo_device)
-
-        l_dev.addLayout(dev_top)
-
-        # ── Stacked Pages: Page 0 = Terminal CLI, Page 1 = Environment Selector & Console ──
-        self.device_stack = QStackedWidget(self.card_device)
-
-        # Page 0: Terminal Command Display Block (Read-only, copyable)
-        self.page_cli = QWidget()
-        l_cli = QVBoxLayout(self.page_cli)
-        l_cli.setContentsMargins(0, 2, 0, 0)
-        l_cli.setSpacing(6)
-
-        cli_header = QHBoxLayout()
-        cli_header.setSpacing(8)
-        self.lbl_cli_title = QLabel("终端运行指令 (Run in terminal)")
-        _MkThemeEngine.apply_style_sheet(self.lbl_cli_title, "font-size: 12px; font-weight: 600; color: #64748b; background: transparent; border: none;")
-        cli_header.addWidget(self.lbl_cli_title)
-        cli_header.addStretch()
-
-        self.combo_cli_shell = RoundedComboBox(self.page_cli, is_dark=ThemeEngine.is_dark())
-        self.combo_cli_shell.setFixedWidth(135)
-        self.combo_cli_shell.addItems(["单行 (推荐/通用)", "CMD (^)", "PowerShell (`)", "Bash (\\)"])
-        self.combo_cli_shell.currentIndexChanged.connect(self._update_cli_command)
-        cli_header.addWidget(self.combo_cli_shell)
-
-        l_cli.addLayout(cli_header)
-
-        self.cli_viewer = CliCommandViewer(self.page_cli)
-        if hasattr(self, "yaml_editor") and hasattr(self.yaml_editor, "sync_to_local_files"):
-            self.cli_viewer._on_copy_hook = self.yaml_editor.sync_to_local_files
-        l_cli.addWidget(self.cli_viewer)
-        self.device_stack.addWidget(self.page_cli)
-
-        # Page 1: Reusable Environment Selector Card
-        self.env_selector = EnvironmentSelectorWidget(self.card_device, is_dark=ThemeEngine.is_dark())
-        self.env_selector.env_changed.connect(self._on_env_changed)
-        self.device_stack.addWidget(self.env_selector)
-
-        l_dev.addWidget(self.device_stack)
-
-        # Wire toggle to stack
-        self.pill_toggle.tab_changed.connect(self.device_stack.setCurrentIndex)
-
-        self.scroll.setWidget(self.scroll_container)
-        self.scroll.viewport().setAutoFillBackground(False)
-        self.scroll_container.setAutoFillBackground(False)
-        main_layout.addWidget(self.scroll, stretch=1)
-        main_layout.addWidget(self.card_device)
-
-        # ── 6. Bottom Action Bar ──
-        self.footer_widget = QFrame()
-        self.footer_widget.setObjectName("DialogFooter")
-        btn_layout = QHBoxLayout(self.footer_widget)
-        btn_layout.setContentsMargins(0, 12, 0, 0)
-        btn_layout.setSpacing(12)
-        btn_layout.addStretch()
-
-        self.btn_cancel = QPushButton("取消")
-        self.btn_cancel.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_cancel.clicked.connect(self.reject)
-        btn_layout.addWidget(self.btn_cancel)
-
-        self.btn_start = QPushButton("开始训练")
-        self.btn_start.setIcon(PhPlay.fill(size=12, color="#ffffff"))
-        self.btn_start.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_start.clicked.connect(self.handle_start_training)
-        btn_layout.addWidget(self.btn_start)
-
-        main_layout.addWidget(self.footer_widget)
-
-        self._connect_cli_command_signals()
-        self._update_cli_command()
+        adv_switches = [
+            getattr(self, "sw_cos_lr", None), getattr(self, "sw_amp", None),
+            getattr(self, "sw_deterministic", None), getattr(self, "sw_pretrained", None),
+            getattr(self, "sw_cls_remap", None), getattr(self, "sw_rect", None),
+            getattr(self, "sw_single_cls", None), getattr(self, "sw_compile", None),
+            getattr(self, "sw_resume", None), getattr(self, "sw_profile", None)
+        ]
+        for sw in adv_switches:
+            if sw is not None:
+                if hasattr(sw, "stateChanged"):
+                    sw.stateChanged.connect(self._update_cli_command)
+                elif hasattr(sw, "toggled"):
+                    sw.toggled.connect(self._update_cli_command)
 
     def _on_env_changed(self, env_info: dict):
         """Called when an environment probe finishes in EnvironmentSelectorWidget."""
@@ -2588,6 +2659,7 @@ class TrainCreateDialog(QDialog):
 
     def reset_to_defaults(self):
         """Reset all training settings & augmentations back to exact default specifications"""
+        self._ensure_adv_built()
         # Core
         if hasattr(self, "combo_model") and hasattr(self.combo_model, "reset_to_default"):
             self.combo_model.reset_to_default()
@@ -2649,6 +2721,8 @@ class TrainCreateDialog(QDialog):
 
     def _get_modified_hyperparameters(self) -> dict:
         """Inspect all advanced settings and return dict of parameters that differ from DEFAULT_TRAIN_SETTINGS."""
+        if not getattr(self, "_adv_built", False):
+            return {}
         modified = {}
 
         # 1. Optimizer & LR
@@ -3100,6 +3174,8 @@ class TrainCreateDialog(QDialog):
         InfoTooltipPopover.hide_popover()
         is_visible = self.adv_container.isVisible()
         new_state = not is_visible
+        if new_state:
+            self._ensure_adv_built()
         
         collapsed_h, expanded_h = self._get_target_heights()
         target_h = expanded_h if new_state else collapsed_h
@@ -3238,59 +3314,111 @@ class TrainCreateDialog(QDialog):
             batch = -1 if batch_text in ('auto', '-1') else int(batch_text)
             imgsz = int(self.combo_imgsz.currentText())
 
-            # Optimizer & LR
-            optimizer = self.combo_optimizer.currentText()
-            lr0 = float(self.input_lr0.text().strip())
-            lrf = float(self.input_lrf.text().strip())
-            momentum = float(self.input_momentum.text().strip())
-            weight_decay = float(self.input_weight_decay.text().strip())
-            warmup_epochs = float(self.input_warmup_epochs.text().strip())
-            warmup_momentum = float(self.input_warmup_momentum.text().strip())
-            warmup_bias_lr = float(self.input_warmup_bias_lr.text().strip())
-            cos_lr = self.sw_cos_lr.checked
+            if getattr(self, "_adv_built", False):
+                # Optimizer & LR
+                optimizer = self.combo_optimizer.currentText()
+                lr0 = float(self.input_lr0.text().strip())
+                lrf = float(self.input_lrf.text().strip())
+                momentum = float(self.input_momentum.text().strip())
+                weight_decay = float(self.input_weight_decay.text().strip())
+                warmup_epochs = float(self.input_warmup_epochs.text().strip())
+                warmup_momentum = float(self.input_warmup_momentum.text().strip())
+                warmup_bias_lr = float(self.input_warmup_bias_lr.text().strip())
+                cos_lr = self.sw_cos_lr.checked
 
-            # Strategy
-            patience = int(self.input_patience.text().strip())
-            close_mosaic = int(self.input_close_mosaic.text().strip())
-            save_period = int(self.input_save_period.text().strip())
-            seed = int(self.input_seed.text().strip())
-            fraction = float(self.input_fraction.text().strip())
-            nbs = int(self.input_nbs.text().strip())
-            freeze_txt = self.input_freeze.text().strip()
-            freeze = int(freeze_txt) if freeze_txt else None
-            multi_scale = float(self.input_multi_scale.text().strip())
-            amp = self.sw_amp.checked
-            deterministic = self.sw_deterministic.checked
-            pretrained = self.sw_pretrained.checked
-            cls_remap = self.sw_cls_remap.checked
-            rect = self.sw_rect.checked
-            single_cls = self.sw_single_cls.checked
-            compile_val = self.sw_compile.checked
-            resume = self.sw_resume.checked
-            profile = self.sw_profile.checked
+                # Strategy
+                patience = int(self.input_patience.text().strip())
+                close_mosaic = int(self.input_close_mosaic.text().strip())
+                save_period = int(self.input_save_period.text().strip())
+                seed = int(self.input_seed.text().strip())
+                fraction = float(self.input_fraction.text().strip())
+                nbs = int(self.input_nbs.text().strip())
+                freeze_txt = self.input_freeze.text().strip()
+                freeze = int(freeze_txt) if freeze_txt else None
+                multi_scale = float(self.input_multi_scale.text().strip())
+                amp = self.sw_amp.checked
+                deterministic = self.sw_deterministic.checked
+                pretrained = self.sw_pretrained.checked
+                cls_remap = self.sw_cls_remap.checked
+                rect = self.sw_rect.checked
+                single_cls = self.sw_single_cls.checked
+                compile_val = self.sw_compile.checked
+                resume = self.sw_resume.checked
+                profile = self.sw_profile.checked
 
-            # Loss & Detection
-            box = float(self.input_box.text().strip())
-            cls_val = float(self.input_cls.text().strip())
-            dfl = float(self.input_dfl.text().strip())
-            cls_pw = float(self.input_cls_pw.text().strip())
-            max_det = int(self.input_max_det.text().strip())
+                # Loss & Detection
+                box = float(self.input_box.text().strip())
+                cls_val = float(self.input_cls.text().strip())
+                dfl = float(self.input_dfl.text().strip())
+                cls_pw = float(self.input_cls_pw.text().strip())
+                max_det = int(self.input_max_det.text().strip())
 
-            # Image Augmentations
-            mosaic = float(self.input_mosaic.text().strip())
-            mixup = float(self.input_mixup.text().strip())
-            cutmix = float(self.input_cutmix.text().strip())
-            bgr = float(self.input_bgr.text().strip())
-            hsv_h = float(self.input_hsv_h.text().strip())
-            hsv_s = float(self.input_hsv_s.text().strip())
-            hsv_v = float(self.input_hsv_v.text().strip())
-            degrees = float(self.input_degrees.text().strip())
-            translate = float(self.input_translate.text().strip())
-            scale = float(self.input_scale.text().strip())
-            shear = float(self.input_shear.text().strip())
-            perspective = float(self.input_perspective.text().strip())
-            fliplr = float(self.input_fliplr.text().strip())
-            flipud = float(self.input_flipud.text().strip())
+                # Image Augmentations
+                mosaic = float(self.input_mosaic.text().strip())
+                mixup = float(self.input_mixup.text().strip())
+                cutmix = float(self.input_cutmix.text().strip())
+                bgr = float(self.input_bgr.text().strip())
+                hsv_h = float(self.input_hsv_h.text().strip())
+                hsv_s = float(self.input_hsv_s.text().strip())
+                hsv_v = float(self.input_hsv_v.text().strip())
+                degrees = float(self.input_degrees.text().strip())
+                translate = float(self.input_translate.text().strip())
+                scale = float(self.input_scale.text().strip())
+                shear = float(self.input_shear.text().strip())
+                perspective = float(self.input_perspective.text().strip())
+                fliplr = float(self.input_fliplr.text().strip())
+                flipud = float(self.input_flipud.text().strip())
+            else:
+                # Fast path: defaults preserved when advanced section remains collapsed
+                optimizer = DEFAULT_TRAIN_SETTINGS["optimizer"]
+                lr0 = float(DEFAULT_TRAIN_SETTINGS["lr0"])
+                lrf = float(DEFAULT_TRAIN_SETTINGS["lrf"])
+                momentum = float(DEFAULT_TRAIN_SETTINGS["momentum"])
+                weight_decay = float(DEFAULT_TRAIN_SETTINGS["weight_decay"])
+                warmup_epochs = float(DEFAULT_TRAIN_SETTINGS["warmup_epochs"])
+                warmup_momentum = float(DEFAULT_TRAIN_SETTINGS["warmup_momentum"])
+                warmup_bias_lr = float(DEFAULT_TRAIN_SETTINGS["warmup_bias_lr"])
+                cos_lr = bool(DEFAULT_TRAIN_SETTINGS["cos_lr"])
+
+                patience = int(DEFAULT_TRAIN_SETTINGS["patience"])
+                close_mosaic = int(DEFAULT_TRAIN_SETTINGS["close_mosaic"])
+                save_period = int(DEFAULT_TRAIN_SETTINGS["save_period"])
+                seed = int(DEFAULT_TRAIN_SETTINGS["seed"])
+                fraction = float(DEFAULT_TRAIN_SETTINGS["fraction"])
+                nbs = int(DEFAULT_TRAIN_SETTINGS["nbs"])
+                freeze = None
+                multi_scale = float(DEFAULT_TRAIN_SETTINGS["multi_scale"])
+                amp = bool(DEFAULT_TRAIN_SETTINGS["amp"])
+                deterministic = bool(DEFAULT_TRAIN_SETTINGS["deterministic"])
+                pretrained = bool(DEFAULT_TRAIN_SETTINGS["pretrained"])
+                cls_remap = bool(DEFAULT_TRAIN_SETTINGS["cls_remap"])
+                rect = bool(DEFAULT_TRAIN_SETTINGS["rect"])
+                single_cls = bool(DEFAULT_TRAIN_SETTINGS["single_cls"])
+                compile_val = bool(DEFAULT_TRAIN_SETTINGS["compile"])
+                resume = bool(DEFAULT_TRAIN_SETTINGS["resume"])
+                profile = bool(DEFAULT_TRAIN_SETTINGS["profile"])
+
+                box = float(DEFAULT_TRAIN_SETTINGS["box"])
+                cls_val = float(DEFAULT_TRAIN_SETTINGS["cls"])
+                dfl = float(DEFAULT_TRAIN_SETTINGS["dfl"])
+                cls_pw = float(DEFAULT_TRAIN_SETTINGS["cls_pw"])
+                max_det = int(DEFAULT_TRAIN_SETTINGS["max_det"])
+
+                mosaic = float(DEFAULT_TRAIN_SETTINGS["mosaic"])
+                mixup = float(DEFAULT_TRAIN_SETTINGS["mixup"])
+                cutmix = float(DEFAULT_TRAIN_SETTINGS["cutmix"])
+                bgr = float(DEFAULT_TRAIN_SETTINGS["bgr"])
+                hsv_h = float(DEFAULT_TRAIN_SETTINGS["hsv_h"])
+                hsv_s = float(DEFAULT_TRAIN_SETTINGS["hsv_s"])
+                hsv_v = float(DEFAULT_TRAIN_SETTINGS["hsv_v"])
+                degrees = float(DEFAULT_TRAIN_SETTINGS["degrees"])
+                translate = float(DEFAULT_TRAIN_SETTINGS["translate"])
+                scale = float(DEFAULT_TRAIN_SETTINGS["scale"])
+                shear = float(DEFAULT_TRAIN_SETTINGS["shear"])
+                perspective = float(DEFAULT_TRAIN_SETTINGS["perspective"])
+                fliplr = float(DEFAULT_TRAIN_SETTINGS["fliplr"])
+                flipud = float(DEFAULT_TRAIN_SETTINGS["flipud"])
+
 
         except ValueError as e:
             MkMessage.error(self, f"参数数值格式不正确，请检查输入: {str(e)}")
@@ -3604,32 +3732,35 @@ class TrainCreateDialog(QDialog):
             if hasattr(self, "adv_header_bar") and self.adv_header_bar:
                 self.adv_header_bar.apply_theme()
 
-            _MkThemeEngine.apply_style_sheet(self.adv_container, """
-                QFrame#AdvContainer {
-                    background-color: transparent;
-                    border: none;
-                }
-                QFrame#AdvContainer QWidget {
-                    background: transparent;
-                }
-            """)
-            self.btn_reset_defaults.setIcon(PhArrowCounterClockwise.regular(size=12, color="#cbd5e1"))
-            _MkThemeEngine.apply_style_sheet(self.btn_reset_defaults, """
-                QPushButton {
-                    border: 1px solid #3f3f46;
-                    background-color: #27272a;
-                    color: #cbd5e1;
-                    font-size: 12px;
-                    font-weight: 500;
-                    border-radius: 6px;
-                    padding: 3px 10px;
-                }
-                QPushButton:hover {
-                    background-color: #3f3f46;
-                    color: #ffffff;
-                    border-color: #52525b;
-                }
-            """)
+            if getattr(self, "_adv_built", False):
+                _MkThemeEngine.apply_style_sheet(self.adv_container, """
+                    QFrame#AdvContainer {
+                        background-color: transparent;
+                        border: none;
+                    }
+                    QFrame#AdvContainer QWidget {
+                        background: transparent;
+                    }
+                """)
+                if hasattr(self, "btn_reset_defaults") and self.btn_reset_defaults:
+                    self.btn_reset_defaults.setIcon(PhArrowCounterClockwise.regular(size=12, color="#cbd5e1"))
+                    _MkThemeEngine.apply_style_sheet(self.btn_reset_defaults, """
+                        QPushButton {
+                            border: 1px solid #3f3f46;
+                            background-color: #27272a;
+                            color: #cbd5e1;
+                            font-size: 12px;
+                            font-weight: 500;
+                            border-radius: 6px;
+                            padding: 3px 10px;
+                        }
+                        QPushButton:hover {
+                            background-color: #3f3f46;
+                            color: #ffffff;
+                            border-color: #52525b;
+                        }
+                    """)
+
 
             # 7. Device & Environment Card
             _MkThemeEngine.apply_style_sheet(self.card_device, """
@@ -3853,32 +3984,35 @@ class TrainCreateDialog(QDialog):
             if hasattr(self, "adv_header_bar") and self.adv_header_bar:
                 self.adv_header_bar.apply_theme()
 
-            _MkThemeEngine.apply_style_sheet(self.adv_container, """
-                QFrame#AdvContainer {
-                    background-color: transparent;
-                    border: none;
-                }
-                QFrame#AdvContainer QWidget {
-                    background: transparent;
-                }
-            """)
-            self.btn_reset_defaults.setIcon(PhArrowCounterClockwise.regular(size=12, color="#64748b"))
-            _MkThemeEngine.apply_style_sheet(self.btn_reset_defaults, """
-                QPushButton {
-                    border: 1px solid #e2e8f0;
-                    background-color: #ffffff;
-                    color: #64748b;
-                    font-size: 12px;
-                    font-weight: 500;
-                    border-radius: 6px;
-                    padding: 3px 10px;
-                }
-                QPushButton:hover {
-                    background-color: #f8fafc;
-                    color: #0f172a;
-                    border-color: #cbd5e1;
-                }
-            """)
+            if getattr(self, "_adv_built", False):
+                _MkThemeEngine.apply_style_sheet(self.adv_container, """
+                    QFrame#AdvContainer {
+                        background-color: transparent;
+                        border: none;
+                    }
+                    QFrame#AdvContainer QWidget {
+                        background: transparent;
+                    }
+                """)
+                if hasattr(self, "btn_reset_defaults") and self.btn_reset_defaults:
+                    self.btn_reset_defaults.setIcon(PhArrowCounterClockwise.regular(size=12, color="#64748b"))
+                    _MkThemeEngine.apply_style_sheet(self.btn_reset_defaults, """
+                        QPushButton {
+                            border: 1px solid #e2e8f0;
+                            background-color: #ffffff;
+                            color: #64748b;
+                            font-size: 12px;
+                            font-weight: 500;
+                            border-radius: 6px;
+                            padding: 3px 10px;
+                        }
+                        QPushButton:hover {
+                            background-color: #f8fafc;
+                            color: #0f172a;
+                            border-color: #cbd5e1;
+                        }
+                    """)
+
 
             # 7. Device & Environment Card
             _MkThemeEngine.apply_style_sheet(self.card_device, """

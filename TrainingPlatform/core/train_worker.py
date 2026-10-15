@@ -137,6 +137,21 @@ class TrainWorker(QThread):
         success = success_state["success"]
         fail_reason = success_state["reason"]
         self._flush_pending_log()
+
+        # Fallback verification: Check if best.pt or last.pt was generated if process exited with 0
+        if not success and not fail_reason and self._process and self._process.returncode == 0:
+            candidate_weights = [
+                os.path.join(self.save_dir, "weights", "best.pt"),
+                os.path.join(self.save_dir, "best.pt"),
+                os.path.join(self.save_dir, "weights", "last.pt"),
+                os.path.join(self.save_dir, "last.pt"),
+            ]
+            for w in candidate_weights:
+                if os.path.exists(w) and os.path.getsize(w) > 0:
+                    self._emit_log(f"[INFO] 验证检测到权重文件已成功生成 ({os.path.basename(w)})，确认训练完成")
+                    success = True
+                    break
+
         if self._is_stopped:
             self._emit_log("[WARN] 训练已被用户中途终止")
             self.finish_signal.emit(False, "训练已被用户中途终止")
@@ -152,38 +167,45 @@ class TrainWorker(QThread):
 
     def _consume_training_output(self, child, state):
         for line in child.iter_lines():
-            raw_line = line.rstrip('\r\n')
-            if raw_line.startswith("__TRAIN_PROGRESS__"):
-                try:
-                    data = json.loads(raw_line[len("__TRAIN_PROGRESS__"):])
-                    self.progress_signal.emit(data)
-                except Exception:
-                    pass
-            elif raw_line.startswith("__SAVE_DIR__"):
-                actual_save_dir = raw_line[len("__SAVE_DIR__"):].strip()
-                if actual_save_dir:
-                    self.save_dir = actual_save_dir
+            # tqdm dynamic in-place updates may deliver lines separated by \r
+            chunks = line.split('\r') if '\r' in line else [line]
+            last_display_chunk = None
+            for chunk in chunks:
+                raw_line = chunk.rstrip('\r\n')
+                # Strip ANSI escape codes and whitespace for protocol checks
+                clean_line = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', raw_line).strip()
+                if not clean_line and not raw_line:
+                    continue
+
+                if clean_line.startswith("__TRAIN_PROGRESS__"):
                     try:
-                        from TrainingPlatform.db.database import DatabaseManager
-                        db = DatabaseManager()
-                        db.update_task_status(self.task_id, "RUNNING", save_dir=actual_save_dir)
+                        data = json.loads(clean_line[len("__TRAIN_PROGRESS__"):].strip())
+                        self.progress_signal.emit(data)
                     except Exception:
                         pass
-            elif raw_line == "__TRAIN_SUCCESS__":
-                state["success"] = True
-            elif raw_line.startswith("__TRAIN_FAILED__"):
-                state["reason"] = raw_line[len("__TRAIN_FAILED__"):]
-            else:
-                # Handle \r inside raw_line from tqdm dynamic in-place updates
-                if '\r' in raw_line:
-                    chunks = raw_line.split('\r')
-                    clean_chunks = [c.rstrip() for c in chunks if c.strip()]
-                    raw_line = clean_chunks[-1] if clean_chunks else ""
-                filtered_line = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', raw_line).rstrip()
-                if filtered_line:
-                    self._emit_log(filtered_line)
-                elif raw_line == "":
-                    self._emit_log("")
+                elif clean_line.startswith("__SAVE_DIR__"):
+                    actual_save_dir = clean_line[len("__SAVE_DIR__"):].strip()
+                    if actual_save_dir:
+                        self.save_dir = actual_save_dir
+                        try:
+                            from TrainingPlatform.db.database import DatabaseManager
+                            db = DatabaseManager()
+                            db.update_task_status(self.task_id, "RUNNING", save_dir=actual_save_dir)
+                        except Exception:
+                            pass
+                elif clean_line == "__TRAIN_SUCCESS__" or "__TRAIN_SUCCESS__" in clean_line:
+                    state["success"] = True
+                elif clean_line.startswith("__TRAIN_FAILED__"):
+                    state["reason"] = clean_line[len("__TRAIN_FAILED__"):].strip()
+                else:
+                    if "[SUCCESS] [Runner] YOLO 模型训练成功完成" in clean_line:
+                        state["success"] = True
+                    # Strip ANSI escape codes for clean terminal logging
+                    filtered_line = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', raw_line).rstrip()
+                    last_display_chunk = filtered_line
+
+            if last_display_chunk is not None:
+                self._emit_log(last_display_chunk)
 
     def _run_in_process(self):
         """Fallback in-process training."""

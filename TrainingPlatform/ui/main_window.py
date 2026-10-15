@@ -359,6 +359,9 @@ class MainWindow(MkWindow):
         self.refresh_sidebar_projects()
         self._sync_sidebar_selection("dashboard")
 
+        # 8. Pre-warm heavy dialog modules & environment cache in idle time (0ms click delay)
+        QTimer.singleShot(200, self._prewarm_training_dialog)
+
     def refresh_sidebar_projects(self, select_project_id=None):
         """Dynamic project list loader for the sidebar submenu."""
         # 1. Clear previous project items
@@ -403,11 +406,26 @@ class MainWindow(MkWindow):
             self.view_project_detail.load_project(self.current_project_id)
             self._sync_sidebar_selection(f"project_{self.current_project_id}")
 
+    def _prewarm_training_dialog(self):
+        """Asynchronously pre-warm dialog classes and scan python environments in background idle."""
+        try:
+            from TrainingPlatform.ui.views.dialogs.train_create_dialog import TrainCreateDialog
+            from TrainingPlatform.core.env_manager import EnvironmentManager
+            em = EnvironmentManager.get_instance()
+            em.scan_environments()
+        except Exception:
+            pass
+
     def show_dialog_with_blur(self, dialog: QDialog, target_widget: QWidget = None, backdrop_dismiss: bool = True):
         """
         Show a modal dialog with smooth Gaussian blur and a modern frosted glass backdrop overlay 
         over the right-hand main content area (stacked_widget).
         """
+        if getattr(self, "_active_blur_dialog", None) is not None:
+            # Fallback to direct exec if a blur dialog is already displaying, avoiding graphics effect conflicts
+            return dialog.exec()
+        self._active_blur_dialog = dialog
+
         if target_widget is None:
             target_widget = self.stacked_widget
 
@@ -426,7 +444,10 @@ class MainWindow(MkWindow):
         class _ResizeFilter(QObject):
             def eventFilter(self, obj, event):
                 if event.type() in (QEvent.Type.Resize, QEvent.Type.Move):
-                    overlay.setGeometry(target_widget.geometry())
+                    try:
+                        overlay.setGeometry(target_widget.geometry())
+                    except Exception:
+                        pass
                 return False
 
         resize_filter = _ResizeFilter()
@@ -448,9 +469,19 @@ class MainWindow(MkWindow):
         try:
             return dialog.exec()
         finally:
-            target_widget.removeEventFilter(resize_filter)
-            overlay.deleteLater()
-            target_widget.setGraphicsEffect(None)
+            self._active_blur_dialog = None
+            try:
+                target_widget.removeEventFilter(resize_filter)
+            except Exception:
+                pass
+            try:
+                overlay.deleteLater()
+            except Exception:
+                pass
+            try:
+                target_widget.setGraphicsEffect(None)
+            except Exception:
+                pass
 
     def on_action_new_project(self):
         """Triggered from the '+' button on the right of the Train submenu header."""
@@ -497,13 +528,22 @@ class MainWindow(MkWindow):
                 self.sub_train.toggle()
 
     def open_project(self, project_id):
+        is_same_project = (self.current_project_id == project_id and 
+                           self.stacked_widget.currentWidget() == self.view_project_detail)
         self.current_project_id = project_id
         self._sync_sidebar_selection(f"project_{project_id}")
 
-        # 1. 立即准备项目视图结构（更新标题、类型标签、任务列表与展示栈，耗时 < 3ms），确保滑入视口的正是目标看板，绝不露出空项目状态
-        self.view_project_detail.load_project(project_id, defer_heavy=True)
+        if is_same_project:
+            # 如果正停留在实验详情页，平滑返回项目看板
+            if getattr(self.view_project_detail, "content_stack", None) and \
+               self.view_project_detail.content_stack.currentWidget() == getattr(self.view_project_detail, "experiment_detail_view", None):
+                self.view_project_detail.show_project_dashboard()
+            return
 
-        # 2. 0 毫秒立即启动页面滑入切换动画，用户点击的一瞬间立马看到切换动画！
+        # 1. 0 毫秒启动骨架屏并异步读取数据，绝不阻塞 UI
+        self.view_project_detail.load_project(project_id, defer_heavy=True, show_skeleton=True)
+
+        # 2. 0 毫秒立即启动页面滑入切换动画，极速 60fps
         if hasattr(self, "titlebar_history_nav") and self.titlebar_history_nav:
             self._is_navigating = True
             try:
@@ -520,7 +560,8 @@ class MainWindow(MkWindow):
         if page_id == "project_detail":
             if self.current_project_id:
                 self._sync_sidebar_selection(f"project_{self.current_project_id}")
-                self.view_project_detail.load_project(self.current_project_id, defer_heavy=True)
+                if self.view_project_detail.project_id != self.current_project_id:
+                    self.view_project_detail.load_project(self.current_project_id, defer_heavy=True)
             else:
                 self._sync_sidebar_selection("project_detail")
             return

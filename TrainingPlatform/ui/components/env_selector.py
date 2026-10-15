@@ -41,8 +41,11 @@ class RoundedComboBox(MkComboBox):
 
     def set_dark_mode(self, is_dark: bool):
         self._is_dark = is_dark
-        if hasattr(self, "_popup_widget") and self._popup_widget is not None:
-            self._popup_widget.update_theme_style()
+        try:
+            if hasattr(self, "_popup_widget") and self._popup_widget is not None:
+                self._popup_widget.update_theme_style()
+        except (RuntimeError, AttributeError):
+            self._popup_widget = None
 
 
 
@@ -239,8 +242,12 @@ class EnvironmentConsoleViewer(QFrame):
         cleaned = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', text)
         if not cleaned.strip() and not text.strip():
             return
-        self.editor.appendPlainText(cleaned)
-        self.editor.verticalScrollBar().setValue(self.editor.verticalScrollBar().maximum())
+        try:
+            if hasattr(self, "editor") and self.editor is not None:
+                self.editor.appendPlainText(cleaned)
+                self.editor.verticalScrollBar().setValue(self.editor.verticalScrollBar().maximum())
+        except (RuntimeError, AttributeError):
+            pass
 
     def clear_log(self):
         self.editor.clear()
@@ -419,7 +426,7 @@ class EnvironmentSelectorWidget(QWidget):
         self.btn_refresh.setFixedHeight(30)
         self.btn_refresh.setIcon(PhArrowsClockwise.regular(size=13, color="#64748b"))
         self.btn_refresh.setToolTip("重新扫描本机 Conda 与虚拟环境")
-        self.btn_refresh.clicked.connect(self.refresh_environments)
+        self.btn_refresh.clicked.connect(lambda: self.refresh_environments(force_refresh=True))
         top_row.addWidget(self.btn_refresh)
 
         # Browse button
@@ -465,9 +472,9 @@ class EnvironmentSelectorWidget(QWidget):
 
         self._apply_button_styles()
 
-    def refresh_environments(self):
+    def refresh_environments(self, force_refresh: bool = False):
         """Rescan all python environments and populate combobox."""
-        envs = self.env_mgr.scan_environments()
+        envs = self.env_mgr.scan_environments(force_refresh=force_refresh)
         selected_path = self.env_mgr.get_selected_python()
 
         self.combo_env.blockSignals(True)
@@ -488,14 +495,28 @@ class EnvironmentSelectorWidget(QWidget):
         self.combo_env.setCurrentIndex(select_idx)
         self.combo_env.blockSignals(False)
 
-        # Run probe on initially selected item
-        self.run_probe_test()
+        # Run probe or reuse cached probe info
+        cached = self.env_mgr.cached_probe_results.get(selected_path)
+        if cached:
+            self._current_probe_info = cached
+            self._update_badges(cached)
+            self.console_viewer.append_log(f">>> 已就绪运行环境: {selected_path}")
+            self.env_changed.emit(cached)
+        else:
+            self.run_probe_test()
 
     def _on_combo_index_changed(self, index: int):
         py_path = self.combo_env.currentData()
         if py_path and os.path.isfile(py_path):
             self.env_mgr.set_selected_python(py_path)
-            self.run_probe_test()
+            cached = self.env_mgr.cached_probe_results.get(py_path)
+            if cached:
+                self._current_probe_info = cached
+                self._update_badges(cached)
+                self.console_viewer.append_log(f">>> 切换到已缓存环境: {py_path}")
+                self.env_changed.emit(cached)
+            else:
+                self.run_probe_test()
 
     def _on_browse_python(self):
         filt = "Python 解释器 (python.exe);;所有文件 (*.*)" if os.name == 'nt' else "Python 解释器 (python*);;所有文件 (*)"
@@ -535,14 +556,23 @@ class EnvironmentSelectorWidget(QWidget):
         self.badge_ultra.update_style("neutral", "Ultralytics: 检测中...")
 
         def _on_log(line: str):
-            self.console_viewer.append_log(line)
+            try:
+                if hasattr(self, "console_viewer") and self.console_viewer is not None:
+                    self.console_viewer.append_log(line)
+            except (RuntimeError, AttributeError):
+                pass
 
         def _on_finish(res: dict):
-            self.btn_test.setEnabled(True)
-            self.btn_refresh.setEnabled(True)
-            self._current_probe_info = res
-            self._update_badges(res)
-            self.env_changed.emit(res)
+            try:
+                if hasattr(self, "btn_test") and self.btn_test is not None:
+                    self.btn_test.setEnabled(True)
+                if hasattr(self, "btn_refresh") and self.btn_refresh is not None:
+                    self.btn_refresh.setEnabled(True)
+                self._current_probe_info = res
+                self._update_badges(res)
+                self.env_changed.emit(res)
+            except (RuntimeError, AttributeError):
+                pass
 
         self.env_mgr.probe_environment_async(py_path, log_cb=_on_log, finish_cb=_on_finish)
 

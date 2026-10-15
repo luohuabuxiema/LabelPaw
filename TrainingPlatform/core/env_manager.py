@@ -207,6 +207,7 @@ class EnvironmentManager(QObject):
             cfg["custom_envs"] = customs
             cfg["selected_python"] = python_path
             self.save_config(cfg)
+            self.cached_envs = []
         return True
 
     def remove_custom_environment(self, python_path: str):
@@ -216,8 +217,9 @@ class EnvironmentManager(QObject):
             customs.remove(python_path)
             cfg["custom_envs"] = customs
             self.save_config(cfg)
+            self.cached_envs = []
 
-    def scan_environments(self) -> List[Dict]:
+    def scan_environments(self, force_refresh: bool = False) -> List[Dict]:
         """
         Scan all available Python environments:
         1. Current runtime Python (sys.executable)
@@ -226,6 +228,9 @@ class EnvironmentManager(QObject):
         4. Workspace venv (.venv/Scripts/python.exe, venv/Scripts/python.exe)
         5. User custom added environments
         """
+        if not force_refresh and getattr(self, "cached_envs", None):
+            return self.cached_envs
+
         discovered = []
         seen_paths = set()
 

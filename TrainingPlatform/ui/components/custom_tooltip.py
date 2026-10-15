@@ -33,10 +33,8 @@ class CustomTooltipPopover(MkTooltipPopover):
 
     def set_content(self, text, theme_override=None):
         self._raw_hint = text
-        if QApplication.platformName() == "windows" and self.testAttribute(Qt.WidgetAttribute.WA_WState_Created):
-            self.hide()
-            self.destroy(True, True)
         super().set_content(text, theme_override=theme_override)
+        self.update()
 
     def on_theme_changed(self, theme_name=""):
         if self.isVisible() and getattr(self, "_raw_hint", ""):
@@ -111,6 +109,11 @@ class _ComponentTooltipFilter(QObject):
         self.active_target = None
 
     def _show(self, target, text):
+        popover = MkTooltipPopover._instance
+        if (popover is not None and isValid(popover) and popover.isVisible() and
+            self._popover_target(popover) is target and
+            getattr(popover, "_raw_hint", None) == text):
+            return
         # A delayed request for a previous anchor must not overwrite this hint.
         MkTooltipPopover.cancel_open()
         self.active_target = target
@@ -138,6 +141,11 @@ class _ComponentTooltipFilter(QObject):
         if kind == QEvent.Type.ToolTip:
             hint_target, text = self._hint(watched)
             if text:
+                if (popover is not None and isValid(popover) and popover.isVisible() and
+                    self._popover_target(popover) is hint_target and
+                    getattr(popover, "_raw_hint", None) == text):
+                    event.accept()
+                    return True
                 self._show(hint_target, text)
             else:
                 self._dismiss()
@@ -153,8 +161,13 @@ class _ComponentTooltipFilter(QObject):
                 else:
                     self._dismiss()
         elif kind == QEvent.Type.Leave and watched in (target, pending):
-            # Passive hints are mouse-transparent: their screen rectangle must
-            # never keep them open after the actual anchor was left.
+            # Passive hints are mouse-transparent: prevent false dismissal if cursor is still inside watched widget
+            try:
+                from PySide6.QtGui import QCursor
+                if watched.rect().contains(watched.mapFromGlobal(QCursor.pos())):
+                    return False
+            except Exception:
+                pass
             if popover is not None and not popover.testAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents):
                 MkTooltipPopover.schedule_close(180)
             else:
