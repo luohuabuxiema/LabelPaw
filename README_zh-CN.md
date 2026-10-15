@@ -2,20 +2,21 @@
 <div align="center">
   <p>
     <a href="https://github.com/luohuabuxiema/LabelPaw" target="_blank">
-      <img alt="X-AnyLabeling" width="200" src="assets/logo.png"></a>
+      <img alt="LabelPaw" width="200" src="assets/logo.png"></a>
   </p>
   <a href="README.md">English</a> | <a href="README_zh-CN.md">简体中文</a>
 </div>
 
 
-# LabelPaw - 智能图像标注系统 (v2.0.0)
+# LabelPaw - 智能图像标注与模型训练系统 (v3.0.0)
 ## 前言
-由于项目需要标注数据集，之前用过 labelme、labelimg 等工具，于是决定结合 SAM2、SAM3、YOLO 姿态估计等优秀的视觉模型，开发一个更智能、更高效的标注工具。经过多次迭代，系统迎来了全新的 **2.0.0 版本**！
+由于项目需要标注数据集，之前用过 labelme、labelimg 等工具，于是决定结合 SAM2、SAM3、YOLO 姿态估计等优秀的视觉模型，开发一个更智能、更高效的标注工具。经过多次迭代，系统迎来了全新的 **3.0.0 版本**（新增一键式视觉模型训练平台）！
 
 源码地址：[https://github.com/luohuabuxiema/LabelPaw](https://github.com/luohuabuxiema/LabelPaw)
 
 ## 更新日志
 
+- 2026-10-15：全新升级 **v3.0.0**！新增 **一键式视觉模型训练平台（TrainingPlatform）**，基于现代 UI 组件库 MonkeyQt 构建，支持 YOLO 模型一键训练、本地硬件环境探针、实时学术级指标曲线监控（Precision/Recall/mAP/Loss）、超参数调优与断点续训，构建“智能标注 + 数据转换 + 模型训练”一站式闭环。
 - 2026-05-28：新增sam3批量智能标注和多个提示词标注，并增加YOLO26模型批量标注，文件列表新增删除和多选按钮等等功能优化。
 - 2026-05-27：删除类别选择的窗口，统一改成在右侧的历史类别面板修改与新增类别、可在历史类别删除和隐藏指定目标框等功能优化。
 - 2026-05-15：新增人脸、手部、行人等关键点模板骨架，可自定义关键点模板与连线。
@@ -33,21 +34,26 @@
 系统基于 PySide6 构建，集成了 **SAM2**、**SAM3** 以及 **Ultralytics YOLO** 视觉模型，极大地提升了标注效率：
 - **智能点选与提示词分割**：开启 SAM 智能标注后，支持在多边形、矩形、OBB 等模式下进行目标快速提取。
 - **关键点骨架模板与智能标注**：全新的关键点模块，内置行人、手部、面部等关键点模板，可自定义关键点模板，实现快速标注，可选 YOLO 模型实现关键点的智能检测与自动连线。
+- **一键视觉模型训练平台 (TrainingPlatform)**：基于 MonkeyQt 现代组件库构建，集成 YOLO 目标检测/实例分割/姿态估计模型训练，具备一键硬件探针检测、训练超参数可视化配置、实时学术曲线动态监控（Loss/Precision/Recall/mAP）及断点续训能力，实现从数据标注到模型训练无缝衔接。
 
 | 功能             | 界面演示                                                     |
 | ---------------- | ------------------------------------------------------------ |
-| sam3批量标注     | ![在这里插入图片描述](assets/0fe12a65b4064e6c964520232569302b.png) |
-| YOLO模型批量标注 | ![在这里插入图片描述](assets/797b72992f5c48ac93f0097fef943efe.png) |
-| 关键点标注       | ![在这里插入图片描述](assets/3907465018334ef597d142779b2b8b61-177985711229411.png) |
-| OBB智能标注      | ![在这里插入图片描述](assets/52c66efbccbe4c91ba2a334cb9006939-177985711229413.png) |
-| 矩形智能标注     | ![在这里插入图片描述](assets/d87d307971c9475182bb7c5a1756aed8-177985711229415.png) |
-| 关键点智能标注   | ![在这里插入图片描述](assets/a8a9ebdb1e56464aac57307318446bdc-177985711229417.png) |
-| 手部关键点模板   | ![在这里插入图片描述](assets/615b3d73adb84378bd87128d5869a316-177985711229419.png) |
-| 内置关键点模板   | ![在这里插入图片描述](assets/b2540b59b9e34f7491d1499f3d125e76-177985711229421.png) |
-| 人脸关键点模板   | ![在这里插入图片描述](assets/b2b2aebc9db1438aadb3cafddb48a8f0-177985711229423.png) |
-| 手部关键点模板   | ![在这里插入图片描述](assets/f22a8de7a22a45aeaf7ecc5dea3809b4-177985711229425.png) |
-| 自定义关键点模板 | ![在这里插入图片描述](assets/61f48c4cc9a44bd2980d2aa450c5f616-177985711229427.png) |
-| 数据集处理工具   | ![在这里插入图片描述](assets/f3371af5d6a94f3880e2dcac8bc0b068-177985711229429.png) |
+| sam3批量标注     | ![SAM3批量智能标注](assets/demo_sam3_batch.png) |
+| YOLO模型批量标注 | ![YOLO模型批量标注](assets/demo_yolo_batch.png) |
+| 关键点标注       | ![关键点骨架标注](assets/demo_keypoint.png) |
+| OBB智能标注      | ![OBB旋转框智能标注](assets/demo_obb.png) |
+| 矩形智能标注     | ![矩形智能标注](assets/demo_rect.png) |
+| 关键点智能标注   | ![关键点智能标注与自动连线](assets/demo_keypoint_ai.png) |
+| 手部关键点模板 (暗黑) | ![手部关键点模板暗黑模式](assets/demo_template_hand_dark.png) |
+| 内置关键点模板   | ![内置关键点模板列表](assets/demo_template_builtin.png) |
+| 人脸关键点模板   | ![人脸关键点模板](assets/demo_template_face.png) |
+| 手部关键点模板 (亮色) | ![手部关键点模板亮色模式](assets/demo_template_hand.png) |
+| 自定义关键点模板 | ![自定义关键点模板](assets/demo_template_custom.png) |
+| 数据集处理工具   | ![数据集格式转换与划分工具](assets/demo_dataset_tool.png) |
+| 训练平台总览与硬件监控 | ![训练平台总览](assets/training_dashboard.png) |
+| 项目训练指标与模型对比 | ![项目训练指标](assets/training_project_metrics.png) |
+| 创建训练任务与环境探针 | ![创建训练任务](assets/training_create_modal.png) |
+| 实验收敛曲线与学术图表 | ![实验收敛曲线](assets/training_experiment_detail.png) |
 
 
 
@@ -55,6 +61,7 @@
 
 - **✨ AI 智能辅助 (SAM2/SAM3 驱动)**：鼠标悬停预览、单点快速提取轮廓、输入文本提示词全图目标自动分割。
 - **🦴 关键点骨架模板与智能 (YOLO 驱动)标注**：支持矩形、分割、obb、关键点智能标注，关键点内置行人（17个关键点）、人脸（68个关键点）、手部（21个关键点），关键点标注可自定义骨架模板。
+- **🚀 一键式视觉模型训练**：内置集成一键训练平台（TrainingPlatform），支持 YOLO 目标检测、实例分割、姿态估计等模型快速训练，提供学术级多曲线对比看板、实时硬件监控与任务管理。
 - **📐 全能标注模式**：矩形 (Rect)、多边形 (Poly)、点 (Point)、OBB 旋转框以及关键点 (Pose)。
 - **🔄 极致 OBB 交互**：旋转框控制手柄，360° 无极顺滑旋转与贴墙滑动检测。
 - **💾 多格式互转与导出**：原生保存 JSON、YOLO (.txt)、XML (Pascal VOC)，可一键生成 U-Net Mask。
@@ -83,7 +90,7 @@ conda activate py311
 首先安装必要的 Python 依赖包：
 
 单独安装 torch>=2.5.0，pytorch 官网地址： [https://pytorch.org/](https://pytorch.org/get-started/previous-versions/?_gl=1*r08hqw*_up*MQ..*_ga*MTg1ODQzMTE5LjE3NzU4ODk5NDI.*_ga_469Y0W5V62*czE3NzU4ODk5NDEkbzEkZzAkdDE3NzU4ODk5NDEkajYwJGwwJGgw/)
-![在这里插入图片描述](assets/d5d10831b3184dfb83fba9ea8166bb7b.png)
+![PyTorch官方版本选择指引](assets/env_pytorch_website.png)
 
 **💡 PyTorch 安装注意事项（新手必看）**
 
@@ -92,7 +99,7 @@ conda activate py311
 **1. 确认显卡支持与 CUDA 版本（极其重要）**
 * **适用系统**：本教程基于 Windows 环境。
 * **如何查看**：按下 `Win + R` 键，输入 `cmd` 打开命令提示符，输入 `nvidia-smi` 并回车。在弹出的表格右上角，找到 **CUDA Version**。
-![在这里插入图片描述](assets/984f810aeee94916a5ef87ba8739d4d9.png)
+![NVIDIA-SMI查看CUDA版本](assets/env_nvidia_smi.png)
 
 * **版本匹配要求**：你下载的 PyTorch CUDA 版本（例如命令中的 `cu118` 或 `cu116`），**必须小于或等于**你电脑刚刚查到的 CUDA Version。如果你的电脑没有独立 N 卡，或者查不到该信息，请到官网选择 **CPU 版本**的安装命令。
 
@@ -140,7 +147,7 @@ print(f"CUDA：{torch.version.cuda}")
 
 之后在自己的虚拟环境下，使用下面命令安装所需的库
 
-```
+```bash
 pip install -r requirements.txt
 ```
 ```python
@@ -148,6 +155,8 @@ pyside6~=6.4.2
 numpy~=1.24.4
 opencv-python~=4.11.0.86
 pillow~=10.4.0
+monkeyqt>=0.2.5
+monkeyqt-icons>=2.1.2
 einops~=0.8.2
 pycocotools~=2.0.11
 scipy~=1.15.3
@@ -169,36 +178,44 @@ git+https://github.com/facebookresearch/sam2.git
 ultralytics==8.4.49
 ```
 
->注：如果需要使用智能辅助功能，请确保你的环境中已经正确配置了 `sam3`、 `sam2`、`ultralytics`相关的库及其依赖，如果上面的sam3、sam2、ultralytics 库安装失败，下文也有源码方式安装教程。
+>  **一键训练平台 UI 依赖说明（从旧环境升级必看）**：
+> 一键训练平台（TrainingPlatform）基于现代化 PySide6 UI 组件库 **MonkeyQt** 构建。如果您是在旧版 LabelPaw 环境基础上更新，只需在原虚拟环境中补充安装 `monkeyqt` 和 `monkeyqt-icons` 即可直接使用训练平台：
+> ```bash
+> pip install monkeyqt>=0.2.5 monkeyqt-icons>=2.1.2
+> ```
+> - **MonkeyQt 组件库使用文档**：[https://monkeyqt.lhbxm.top/](https://monkeyqt.lhbxm.top/)
+> - **MonkeyQt 官方源码仓库**：[https://github.com/luohuabuxiema/MonkeyQt](https://github.com/luohuabuxiema/MonkeyQt)
+
+> 注：如果需要使用智能辅助功能，请确保你的环境中已经正确配置了 `sam3`、 `sam2`、`ultralytics`相关的库及其依赖，如果上面的sam3、sam2、ultralytics 库安装失败，下文也有源码方式安装教程。
 
 #### 安装过程我遇到的错误
 
 （1）创建虚拟环境时候创建不了，报错如下：
-![在这里插入图片描述](assets/eab21eb3721f45cf87d161c782afc73f.png)
+![Conda创建虚拟环境报错](assets/err_conda_create.png)
 
 解决方法：去 C:\Users\你的用户下，删除 .condarc 文件 
 
 （2）报错 ModuleNotFoundError: No module named ‘pkg_resources‘ 
 
-![在这里插入图片描述](assets/45b21e1d50fc4853978617234eec5d32.png)
+![缺少pkg_resources报错](assets/err_pkg_resources.png)
 
 解决方法：降低 setuptools 库版本，我安装的版本是 79.0.1
 
 ```python
 pip install setuptools==79.0.1
 ```
-![在这里插入图片描述](assets/c673e9d646bc4e0989cfe40a432c2adf.png)
+![安装低版本setuptools成功](assets/fix_setuptools.png)
 
 参考链接： [https://blog.csdn.net/u014451778/article/details/158469881](https://blog.csdn.net/u014451778/article/details/158469881/)
 
 （3）报错 ModuleNotFoundError: No module named ‘triton‘ 
-![在这里插入图片描述](assets/d4b99849318740f0b1a40cfa857af640.png)
+![缺少triton库报错](assets/err_triton_missing.png)
 
 解决方法：下载离线安装包，单独安装
 
 triton离线安装包下载地址：[https://hf-mirror.com/madbuda/triton-windows-builds](https://hf-mirror.com/madbuda/triton-windows-builds/)
 
-![在这里插入图片描述](assets/404ac26c33944f0f9bcfe727dbfd501c.png)
+![Triton离线whl下载页面](assets/triton_wheel_download.png)
 
 参考链接：[https://blog.csdn.net/qq_42910179/article/details/155606159](https://blog.csdn.net/qq_42910179/article/details/155606159/)
 
@@ -292,40 +309,202 @@ pip install ultralytics
 
 ### 4. 启动系统
 
-完成所有配置后，在根目录下运行：
+完成所有配置后，可在根目录下按需启动：
+
+- **主系统（智能图像标注与训练平台一体化入口）**：
 ```bash
 python main.py
+```
+*(可在标注界面左侧工具栏一键唤起模型训练平台)*
+
+- **独立运行一键训练平台（TrainingPlatform）**：
+```bash
+python TrainingPlatform/main_app.py
 ```
 
 ---
 
 ## 📖 用户操作指南
 
-### 📋基本工作流
+### 1. 智能图像标注工作流 (LabelPaw)
 
-1. **打开目录**：点击“打开目录”选择图片文件夹。
-2. **选择格式**：在左侧下拉菜单选择保存格式（JSON / YOLO / XML）。
-3. **标注模式**：选择左侧工具栏，可选矩形、关键点、obb、多边形标注模式，或者使用快捷键。
-4. **智能标注**：开启 **智能辅助**（快捷键 Q）。sam3/sam2 模型支持悬停预览点选，sam3 模型支持输入提示词标注，可在顶部工具栏选择其他模型，也可以使用 YOLO 智能预推理进行标注。
-5. **关键点/骨架标注**：选择关键点标注模式后，可在顶部栏工具栏可选择内置的关键点骨架模板进行标注，关键点骨架模板目前内置人脸、手部、行人等骨架，也可以自定义关键点骨架模板，也可通过 YOLO 智能预推理。
-6. **数据集处理**：点击工具栏的“数据集转换”，可执行格式互转、U-Net Mask 生成、以及训练/验证集比例划分。
+#### 📋 基本标注操作流程
+1. **打开目录**：点击左侧“打开目录”按钮选择图片所在文件夹。
+2. **选择保存格式**：在左侧下拉菜单选择保存格式（支持 `JSON` / `YOLO` / `XML`）。
+3. **选择标注模式**：在左侧工具栏选择标注模式，支持矩形、多边形、点、OBB 旋转框以及关键点骨架。
+4. **智能辅助标注**：开启 **智能辅助**（快捷键 `Q`）。
+   - **SAM2 / SAM3 模型**：支持鼠标悬停实时轮廓预览、单点快速提取目标边界；SAM3 支持输入文本提示词（如 "car", "dog"）进行全图自动分割。
+   - **YOLO 模型**：支持在顶部工具栏切换并执行目标检测、分割、旋转框及姿态估计的自动预推理。
+5. **关键点/骨架模板**：进入关键点模式后，可在顶部栏选择内置模板（人体 17 点、人脸 68 点、手部 21 点），亦可自定义关键点模板骨架连线。
+6. **数据集处理**：点击工具栏的“数据集转换”，可执行 JSON / XML / YOLO 格式互转、一键生成 U-Net 二值掩膜（Mask），以及自定义比例随机划分训练集/验证集/测试集。
 
-### ⌨️ 快捷键大全
+#### ⌨️ 标注快捷键大全
 
-- **A / 左方向键**：上一张图片
-- **D / 右方向键**：下一张图片
-- **Ctrl + S**：手动保存当前标注
-- **Q**：开启/关闭 SAM 智能辅助
-- **R**：矩形标注 (Rect)
-- **P**：多边形标注 (Poly)
-- **O**：旋转框标注 (OBB)
-- **T**：关键点标注 (Pose/Point)
-- **M**：使用 YOLO 模型进行推理 (需开启智能辅助并加载对应模型)
-- **E**：修改当前选中的标签类别
-- **Del / Backspace**：删除选中的标注框/点
-- **Ctrl + Z**：撤销 (支持 20 步)
-- **Ctrl + Y (或 Ctrl + Shift + Z)**：重做
-- **Z / X / C / V**：OBB 旋转框快捷微调角度
+| 快捷键 | 功能说明 | 快捷键 | 功能说明 |
+| :--- | :--- | :--- | :--- |
+| **A / ←** | 切换至上一张图片 | **D / →** | 切换至下一张图片 |
+| **Ctrl + S** | 手动保存当前图片标注 | **Q** | 开启 / 关闭 SAM 智能辅助 |
+| **R** | 切换为矩形标注模式 (Rect) | **P** | 切换为多边形标注模式 (Poly) |
+| **O** | 切换为旋转框标注模式 (OBB) | **T** | 切换为关键点标注模式 (Pose) |
+| **M** | 触发 YOLO 模型智能推理 | **E** | 快速修改当前选中目标的类别 |
+| **Del / Backspace** | 删除当前选中的标注目标 | **Ctrl + Z** | 撤销上一步操作 (支持 20 步) |
+| **Ctrl + Y** | 重做操作 (Ctrl+Shift+Z) | **Z / X / C / V** | OBB 旋转框高精度角度微调 |
+
+---
+
+### 2. 一键视觉模型训练平台使用教程 (TrainingPlatform)
+
+一键训练平台（TrainingPlatform）基于现代 UI 组件库 MonkeyQt 构建，旨在帮助用户无需繁琐编写代码即可完成深度学习视觉模型的全流程一键式训练、实时监控与导出。
+
+#### 🛠️ 2.1 训练前准备事项
+
+在开始训练前，请确保完成以下准备工作：
+
+##### 1. 数据集准备与标准目录结构
+使用 LabelPaw 标注完成后，通过工具栏的 **“数据集转换”** 功能将标注导出并划分为标准的 YOLO 格式目录：
+```text
+my_dataset/
+├── images/
+│   ├── train/          <-- 训练集图片 (.jpg, .png 等)
+│   ├── val/            <-- 验证集图片
+│   └── test/           <-- 测试集图片 (可选)
+└── labels/
+    ├── train/          <-- 训练集对应标注文件 (.txt)
+    ├── val/            <-- 验证集对应标注文件 (.txt)
+    └── test/           <-- 测试集对应标注文件 (可选)
+```
+
+##### 2. 编写/配置 `data.yaml` 文件
+在数据集根目录下创建 `data.yaml`（平台内自带在线编辑器，可直接加载修改）：
+
+- **常规任务（目标检测 / 实例分割 / 旋转框 OBB）**：
+```yaml
+# 训练集与验证集路径 (支持绝对路径或相对于项目根目录的相对路径)
+train: D:/datasets/my_dataset/images/train
+val: D:/datasets/my_dataset/images/val
+test: # D:/datasets/my_dataset/images/test (可选)
+
+# 类别数量
+nc: 2
+
+# 类别名称映射
+names:
+  0: dog
+  1: cat
+```
+
+- **关键点 / 姿态估计任务 (Pose)**：
+```yaml
+train: D:/datasets/my_pose_dataset/images/train
+val: D:/datasets/my_pose_dataset/images/val
+
+nc: 1
+names:
+  0: person
+
+# 关键点维度：[关键点数量, 坐标维度(x, y, visible)]
+kpt_shape: [17, 3]
+# 水平翻转增强时的对称关键点索引映射
+flip_idx: [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15]
+```
+
+##### 3. 基础预训练模型准备
+- 平台支持 YOLOv8、YOLO11、YOLO26 等系列模型。
+- 可选择使用官方预训练权重（如 `yolov8n.pt`, `yolo11s.pt`, `yolo26n-seg.pt`, `yolo26n-pose.pt`）。若本地未下载，启动训练时将自动下载，或手动放置于本地后在平台中点击“浏览”选取。
+
+##### 4. 硬件环境要求
+- **独立显卡 (推荐)**：配备 NVIDIA 显卡并安装好支持 CUDA 的 PyTorch。平台自带**环境探针**，启动时自动检测 GPU 型号、显存大小（如 RTX 4090 24GB）及 CUDA 状态。
+- **无显卡用户**：平台支持选择 **CPU 训练**，建议搭配轻量级模型（如 `yolov8n`、`yolo11n`）并将 `batch` 设为小数值。
+
+---
+
+#### 🚀 2.2 详细训练操作步骤
+
+##### 第一步：启动训练平台
+- **集成入口**：启动 LabelPaw（`python main.py`），在主界面左侧导航栏点击 **“模型训练”** 图标即可直接拉起。
+- **独立入口**：在终端直接运行 `python TrainingPlatform/main_app.py`。
+
+##### 第二步：新建或选择训练项目 (Project)
+1. 首次进入后，在左侧导航进入 **“项目管理”** 页面。
+2. 点击右上角 **“新建项目”**，输入项目名称（如 `Road_Defect_Inspection`），选择视觉任务类型（目标检测 Detect / 实例分割 Segment / 姿态估计 Pose / 旋转框 OBB），点击确定。
+3. 点击进入创建好的项目详情页。
+
+##### 第三步：配置训练任务超参数 (Train Configuration)
+在项目详情页中点击右上角 **“新建训练任务”**，系统将弹出全功能参数配置窗口：
+
+1. **基础配置 (模型与数据)**：
+   - **基础模型**：选择内置预设模型（如 YOLOv8n / YOLO11s）或点击文件夹图标加载本地自定义 `.pt` 权重。
+   - **数据集配置**：点击“选择数据集”选取前面准备好的 `data.yaml`。窗口右侧将自动加载 YAML 内容，并支持直接在线编辑与保存。
+2. **核心训练超参数**：
+   - **训练轮数 (Epochs)**：根据数据集大小设定，通常建议 `100` ~ `300` 轮。
+   - **批次大小 (Batch Size)**：支持填入 `auto`（平台自动根据当前显存探测最优批次），也可手动填入 `8`、`16`、`32` 等固定数值。
+   - **图像尺寸 (ImgSz)**：默认 `640`，小目标较多或高分辨率图像可设为 `1280`。
+   - **实验任务名称**：为本次训练命名（如 `exp1_baseline`）。
+3. **高级超参数微调 (可折叠面板)**：
+   - **优化器与学习率**：支持选择 `auto`、`SGD`、`Adam`、`AdamW`，可配置初始学习率 `lr0`（默认 0.01）、余弦退火学习率 `cos_lr`、学习率预热轮数 `warmup_epochs`。
+   - **加速与训练策略**：
+     - **自动混合精度 (AMP)**：默认开启，大幅降低显存占用并提升训练速度；
+     - **早停机制 (Patience)**：当指标连续 N 轮无改善时自动停止（默认 100）；
+     - **关闭增强 (Close Mosaic)**：最后 N 轮自动关闭 Mosaic 增强以稳定模型收敛（默认 10）；
+     - **断点续训 (Resume)**：若此前训练意外中断，勾选此项并指定 `last.pt` 即可无缝续训。
+   - **数据增强控制**：可微调 Mosaic、Mixup、HSV 抖动、旋转 (Degrees)、水平/垂直翻转比例等。
+4. **硬件与训练设备探针**：
+   - 在底部的训练设备选择栏中，平台已自动探测到可用显卡（如 `0: NVIDIA GeForce RTX 4090`）。勾选目标 GPU 编号，并指定数据读取进程数（`workers`，推荐设为 4 或 8）。
+
+##### 第四步：启动训练与实时动态监控
+1. 确认参数无误后，点击窗口右下角 **“开始训练”**。
+2. 任务自动进入后台执行，界面无缝切换至 **“实时监控”** 看板：
+   - **学术级多指标收敛曲线**：实时动态绘制当前 Epoch 的各项指标：
+     - **损失曲线 (Loss)**：`train/box_loss`、`train/cls_loss`、`train/dfl_loss` 及验证集 Loss；
+     - **学术评测指标**：`metrics/precision(B)`、`metrics/recall(B)`、`metrics/mAP50(B)`、`metrics/mAP50-95(B)`；
+     - 支持曲线平滑滤波切换、单曲线聚焦查看及多实验曲线对比。
+   - **美化日志控制台**：实时格式化输出训练进度条、显存占用量 (VRAM)、耗时估算与学习率。
+   - **硬件探针监控卡片**：实时动态显示显存使用量、显存利用率及系统 CPU 负载。
+
+##### 第五步：实验评估与模型导出
+1. 训练完成后，平台将自动汇总本次训练的所有学术图表：
+   - 混淆矩阵图 (`confusion_matrix.png`)
+   - PR 曲线图 (`PR_curve.png`) 与 F1-Confidence 曲线图
+   - 验证集真实标注与模型预测效果对比图 (`val_batch_pred.jpg`)
+2. **权重文件自动归档**：
+   - `best.pt`：验证集指标最高的最佳模型权重；
+   - `last.pt`：最终轮次检查点权重（用于断点续训）。
+3. **工业模型导出**：
+   - 在实验详情页面点击 **“模型导出”**，可一键将 `best.pt` 转换为 **ONNX**、**TensorRT (Engine)**、**TorchScript** 等格式，便于后续在边缘设备或生产环境高性能部署。
+
+---
+
+#### 🔄 2.3 “标注-训练”生态无缝闭环
+
+在 LabelPaw 中，标注与训练并非割裂的两个工具，而是紧密集成的闭环流程：
+```text
+┌─────────────────┐      数据集导出 (YOLO格式)     ┌──────────────────────┐
+│  LabelPaw       │ ───────────────────────────> │  TrainingPlatform    │
+│  智能图像标注   │                              │  一键视觉模型训练    │
+└─────────────────┘                              └──────────────────────┘
+        ▲                                                   │
+        │           导入生成的 best.pt 权重                  │
+        └───────────────────────────────────────────────────┘
+```
+1. 使用 LabelPaw 标注少量样本（如 100~200 张）并导出数据集；
+2. 在 TrainingPlatform 中一键训练，产出属于您自己场景的 `best.pt`；
+3. 将 `best.pt` 放入 LabelPaw 的 `weights/` 目录下；
+4. 回到 LabelPaw 标注界面，顶部选择该模型并开启 **智能辅助**，即可使用自己训练的模型对后续成千上万张待标图片进行**全自动批量预标注**，标注效率提升 10 倍以上！
+
+---
+
+#### 💡 2.4 训练常见问题与调优技巧 (FAQ)
+
+- **Q1: 训练启动后报错显存不足 (CUDA Out of Memory / OOM)？**
+  - **解决方法**：
+    1. 在新建任务时将 `批次大小 (Batch Size)` 调小（例如从 32 改为 16、8 或 4）；
+    2. 将 `图像尺寸 (ImgSz)` 适度降低（如从 1280 降为 640 或 480）；
+    3. 确认已开启高级设置中的 `AMP (自动混合精度)`；
+    4. 调小 `工作线程数 (workers)`（设为 2 或 4）。
+- **Q2: 电脑没有独立 GPU 可以训练吗？**
+  - **解决方法**：可以。在训练设备中选择 `CPU`，并选用轻量级的 `yolov8n` 模型，将 `batch` 设为 4，`epochs` 设为较小轮数进行初步验证。
+- **Q3: 训练意外中断，如何恢复？**
+  - **解决方法**：进入新建训练任务窗口，勾选高级设置中的 **“断点续训 (Resume)”**，在基础模型路径中选择此前中断实验输出的 `last.pt` 权重文件，点击开始训练即可从中断的轮次无缝继续。
 
 ---
 
@@ -333,7 +512,8 @@ python main.py
 
 系统采用模块化设计，高内聚低耦合，前端 UI 与底层模型推理分离。
 - `main.py`：主控界面与事件路由。
-- `labelpaw/`：核心模块，包含绘图画布 (`graphics/canvas.py`)、数据格式导出 (`data/exporter.py`)、SAM 智能模型推理 (`models/sam_client.py`) 以及 YOLO 智能模型推理 (`models/yolo_predictor.py`)。
+- `labelpaw/`：图像标注核心模块，包含绘图画布 (`graphics/canvas.py`)、数据格式导出 (`data/exporter.py`)、SAM 智能模型推理 (`models/sam_client.py`) 以及 YOLO 智能模型推理 (`models/yolo_predictor.py`)。
+- `TrainingPlatform/`：一键视觉模型训练平台模块，基于 MonkeyQt 组件库构建，包含训练任务调度器 (`core/`)、现代 UI 视图与学术图表 (`ui/`) 等。
 - `ui/`：图形化组件与主题定制。
 
 欢迎广大开发者 Fork 并提交 PR！
