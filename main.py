@@ -32,7 +32,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QInputDial
     QListWidgetItem, QDialog, QMenu, QAbstractItemView, QProgressBar, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit, \
     QCheckBox, QListWidget, QFrame, QWidget
 from PySide6.QtCore import Qt, QPointF, QRectF, QThread, Signal, QSize, QEvent, QSettings
-from PySide6.QtGui import QPainter, QIcon, QPixmap, QColor, QAction, QActionGroup, QPolygonF, QMovie
+from PySide6.QtGui import QPainter, QIcon, QPixmap, QColor, QAction, QActionGroup, QPolygonF, QMovie, QShortcut, QKeySequence
 from TrainingPlatform.ui.main_window import MainWindow as TrainingPlatformWindow
 import cv2
 import numpy as np
@@ -1077,6 +1077,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._init_pose_templates()
 
         self._connect_signals()
+        self._init_class_shortcuts()
         self._set_mode(CanvasMode.RECT)
         
         # 初始化模型下拉菜单
@@ -1351,9 +1352,24 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # 类别管理组件信号
         self.classListWidget.class_added.connect(self._on_class_added_from_widget)
         self.classListWidget.class_renamed.connect(self._on_class_renamed_from_widget)
+        self.classListWidget.class_removed.connect(self._on_class_removed_from_widget)
         self.classListWidget.color_changed.connect(self.on_class_color_changed)
         self.classListWidget.item_changed.connect(self.on_list_item_changed)
         self.classListWidget.shape_class_reassigned.connect(self.on_shape_class_reassigned)
+
+    def _init_class_shortcuts(self):
+        self._class_shortcuts = []
+        for index in range(10):
+            shortcut = QShortcut(QKeySequence(str(index)), self)
+            shortcut.setContext(Qt.WindowShortcut)
+            shortcut.activated.connect(lambda index=index: self._select_class_by_shortcut(str(index)))
+            self._class_shortcuts.append(shortcut)
+
+    def _select_class_by_shortcut(self, label):
+        focused_widget = QApplication.focusWidget()
+        if isinstance(focused_widget, QLineEdit):
+            return
+        self.classListWidget.select_class_by_label(label)
 
     def on_predict_clicked(self):
         if not getattr(self, 'current_yolo_predictor', None):
@@ -1731,6 +1747,109 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.auto_save_annotation()
                 self.push_state()
             DialogOver(self, f"已将所有的 '{old_name}' 批量变更为 '{new_name}'", "修改成功", "success")
+
+    def _on_class_removed_from_widget(self, cls_name):
+        if cls_name not in self.class_list:
+            return
+
+        class_index = self.class_list.index(cls_name)
+        shapes_to_remove = [
+            shape for shape in self.scene.items()
+            if isinstance(shape, (RectShape, PolyShape, PointShape, RotatedRectShape, PoseShape))
+            and getattr(shape, 'label', '') == cls_name
+        ]
+        message = f"确定删除类别 '{cls_name}' 吗？"
+        message += "\n当前数据集中的该类别标注都会被删除。"
+        message += "\nYOLO 标注文件中的后续类别编号也会同步调整。"
+
+        reply = QMessageBox.question(
+            self,
+            "删除类别",
+            message,
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if reply != QMessageBox.Yes:
+            return
+
+        for shape in shapes_to_remove:
+            self.scene.removeItem(shape)
+
+        if self.current_dir:
+            import glob
+            import xml.etree.ElementTree as ET
+
+            for json_file in glob.glob(os.path.join(self.current_dir, "*.json")):
+                if os.path.basename(json_file) == "class_colors.json":
+                    continue
+                try:
+                    with open(json_file, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                    shapes = data.get("shapes")
+                    if not isinstance(shapes, list):
+                        continue
+                    filtered_shapes = [
+                        shape for shape in shapes
+                        if shape.get("label") != cls_name
+                    ]
+                    if len(filtered_shapes) != len(shapes):
+                        data["shapes"] = filtered_shapes
+                        with open(json_file, "w", encoding="utf-8") as f:
+                            json.dump(data, f, ensure_ascii=False, indent=2)
+                except Exception as e:
+                    print(f"删除 JSON 类别标注失败: {json_file}, {e}")
+
+            for xml_file in glob.glob(os.path.join(self.current_dir, "*.xml")):
+                try:
+                    tree = ET.parse(xml_file)
+                    root = tree.getroot()
+                    changed = False
+                    for obj in list(root.findall("object")):
+                        name_node = obj.find("name")
+                        if name_node is not None and name_node.text == cls_name:
+                            root.remove(obj)
+                            changed = True
+                    if changed:
+                        tree.write(xml_file, encoding="utf-8", xml_declaration=True)
+                except Exception as e:
+                    print(f"删除 XML 类别标注失败: {xml_file}, {e}")
+
+            for txt_file in glob.glob(os.path.join(self.current_dir, "*.txt")):
+                if os.path.basename(txt_file) == "classes.txt":
+                    continue
+                try:
+                    with open(txt_file, "r", encoding="utf-8") as f:
+                        lines = f.readlines()
+                    updated_lines = []
+                    changed = False
+                    for line in lines:
+                        parts = line.strip().split()
+                        if not parts:
+                            continue
+                        try:
+                            label_id = int(parts[0])
+                        except ValueError:
+                            updated_lines.append(line)
+                            continue
+                        if label_id == class_index:
+                            changed = True
+                            continue
+                        if label_id > class_index:
+                            parts[0] = str(label_id - 1)
+                            changed = True
+                        updated_lines.append(" ".join(parts) + "\n")
+                    if changed:
+                        with open(txt_file, "w", encoding="utf-8") as f:
+                            f.writelines(updated_lines)
+                except Exception as e:
+                    print(f"删除 YOLO 类别标注失败: {txt_file}, {e}")
+
+        self.class_list.remove(cls_name)
+        self.classListWidget.remove_class(cls_name)
+        self.save_classes()
+        self.auto_save_annotation()
+        self.update_annotation_tree()
+        self.push_state()
 
     def on_class_color_changed(self, cls_name, color):
         """类别颜色变更时，同步更新画布上所有该类别的形状颜色"""
