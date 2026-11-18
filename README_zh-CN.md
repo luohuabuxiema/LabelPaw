@@ -28,6 +28,9 @@
 - 2026-04-9：支持矩形 (Rect)、多边形 (Poly)、点 (Point) 标注，以及独创的 OBB 旋转框控制手柄（支持 360° 无极顺滑旋转与贴墙滑动检测）。
 - 2026-04-8：支持原生保存 JSON、YOLO (.txt)、XML (Pascal VOC)。
 
+<!-- 本地修订备注（2026-11-17）：以下三项是在官方项目基础上实际完成并验证的本地功能改动，非官方原始 README 内容。 -->
+- **本地功能修订**：标注界面增加数字键 `0`～`9` 按标签名称精确切换、右键删除类别及其标注同步处理；TrainingPlatform 推理页面统一检测框与右侧图例的类别颜色。
+
 
 ## 系统简介
 
@@ -35,6 +38,9 @@
 - **智能点选与提示词分割**：开启 SAM 智能标注后，支持在多边形、矩形、OBB 等模式下进行目标快速提取。
 - **关键点骨架模板与智能标注**：全新的关键点模块，内置行人、手部、面部等关键点模板，可自定义关键点模板，实现快速标注，可选 YOLO 模型实现关键点的智能检测与自动连线。
 - **一键视觉模型训练平台 (TrainingPlatform)**：基于 MonkeyQt 现代组件库构建，集成 YOLO 目标检测/实例分割/姿态估计模型训练，具备一键硬件探针检测、训练超参数可视化配置、实时学术曲线动态监控（Loss/Precision/Recall/mAP）及断点续训能力，实现从数据标注到模型训练无缝衔接。
+
+<!-- 本地修订备注（2026-11-17）：只补充已经实际验证的界面功能，不改变官方模型和训练逻辑。 -->
+- **本地界面功能补充**：数字键 `0`～`9` 可精确选择同名数字类别；右键类别列表可删除类别并同步更新 JSON/XML/YOLO 标注；训练平台推理结果中的检测框颜色与右侧类别图例保持一致。
 
 | 功能             | 界面演示                                                     |
 | ---------------- | ------------------------------------------------------------ |
@@ -73,116 +79,69 @@
 
 ### 1. 基础环境依赖
 
-推荐使用 Python 3.10+。
+<!-- 修订备注（2026-11-17）：本机实际运行环境为 Linux、Conda 环境 yolo、Python 3.11；这里仅记录该已验证环境，不代表其他平台已验证。 -->
+本次已验证的环境：Linux、Conda 环境 `yolo`、Python 3.11。
 
 创建虚拟环境，命令如下：
 
-```python
-conda create -n py311 python==3.11.5
+```bash
+conda create -n yolo python=3.11
 ```
-进入刚刚创建的虚拟环境，命令如下：
-
-```python
-conda activate py311 
-```
-
-
-首先安装必要的 Python 依赖包：
-
-单独安装 torch>=2.5.0，pytorch 官网地址： [https://pytorch.org/](https://pytorch.org/get-started/previous-versions/?_gl=1*r08hqw*_up*MQ..*_ga*MTg1ODQzMTE5LjE3NzU4ODk5NDI.*_ga_469Y0W5V62*czE3NzU4ODk5NDEkbzEkZzAkdDE3NzU4ODk5NDEkajYwJGwwJGgw/)
-![PyTorch官方版本选择指引](assets/env_pytorch_website.png)
-
-**💡 PyTorch 安装注意事项（新手必看）**
-
-在进行安装 PyTorch 之前，请大家务必核对以下几点，避免安装后运行报错：
-
-**1. 确认显卡支持与 CUDA 版本（极其重要）**
-* **适用系统**：本教程基于 Windows 环境。
-* **如何查看**：按下 `Win + R` 键，输入 `cmd` 打开命令提示符，输入 `nvidia-smi` 并回车。在弹出的表格右上角，找到 **CUDA Version**。
-![NVIDIA-SMI查看CUDA版本](assets/env_nvidia_smi.png)
-
-* **版本匹配要求**：你下载的 PyTorch CUDA 版本（例如命令中的 `cu118` 或 `cu116`），**必须小于或等于**你电脑刚刚查到的 CUDA Version。如果你的电脑没有独立 N 卡，或者查不到该信息，请到官网选择 **CPU 版本**的安装命令。
-
-
-**2. Conda 与 Pip 命令二选一即可**
-
-
-根据自己电脑安装指定版本，安装命令如下，如果你使用 `conda` 命令卡住，可以尝试先在终端配置好国内的清华/中科大 conda 镜像源，然后再删掉命令后面的 `-c pytorch -c nvidia`（因为带上 `-c` 会强制去国外官方频道下载）：
-
+进入虚拟环境：
 
 ```bash
-conda install pytorch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0  pytorch-cuda=11.8 -c pytorch -c nvidia
+conda activate yolo
 ```
 
-上面的命令，大多数情况下是安装失败的，所以这里推荐使用阿里云镜像源安装，阿里云上镜像，pytorch gpu版的 whl 包可以在此链接查看：链接: [https://mirrors.aliyun.com/pytorch-wheels](https://mirrors.aliyun.com/pytorch-wheels/)
-
-后面 cu 版本需要对应cuda 的版本号，例如安装 cuda11.8 就写  cu118
-
+<!-- 修订备注：替换原来的 Windows/CUDA 通用说明及多个未经本机验证的安装命令，保留用户实际执行的 Conda 命令。 -->
+本机实际执行的 PyTorch/CUDA 安装命令：
 ```bash
--f  https://mirrors.aliyun.com/pytorch-wheels/cu118
-```
-cuda11.8 安装命令：
-```bash
-pip install torch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 -f  https://mirrors.aliyun.com/pytorch-wheels/cu118
-```
-cuda12.1 安装命令：
-
-```bash
-pip install torch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 -f  https://mirrors.aliyun.com/pytorch-wheels/cu121
+conda install pytorch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 pytorch-cuda=11.8 -c pytorch -c nvidia
 ```
 
-**3. 验证是否安装成功**
-安装进度条跑完后，不要急着关掉窗口！在终端里输入 `python` ，输入以下代码：
-```python
-import torch
-print(torch.__version__)
-print(torch.cuda.is_available())
-print(torch.cuda.device_count())
-print(f"CUDA：{torch.version.cuda}")
-```
-如果输出了 `True`，恭喜你，cuda 可用！如果输出 `False`，说明装成了 CPU 版本或者 CUDA 不匹配，可能需要卸载重装。
+如需确认 Python 能导入 PyTorch，可在激活 `yolo` 环境后执行 `python -c "import torch; print(torch.__version__)"`。本次已确认 Conda 列表中存在 PyTorch 2.5.0、TorchVision 0.20.0、TorchAudio 2.5.0 和 `pytorch-cuda` 11.8；此处不据此宣称 CUDA 推理或训练已经验证。
 
 ---
 
 
-之后在自己的虚拟环境下，使用下面命令安装所需的库
+之后在 `yolo` 环境下安装项目依赖：
 
 ```bash
 pip install -r requirements.txt
 ```
-```python
-pyside6~=6.4.2
-numpy~=1.24.4
-opencv-python~=4.11.0.86
-pillow~=10.4.0
-monkeyqt>=0.2.5
-monkeyqt-icons>=2.1.2
-einops~=0.8.2
-pycocotools~=2.0.11
-scipy~=1.15.3
-tqdm~=4.67.1
-iopath~=0.1.10
-matplotlib~=3.10.8
-timm~=1.0.26
-ftfy~=6.3.1
-psutil~=7.2.1
-torchmetrics~=1.5.0
-omegaconf~=2.3.0
-numba~=0.64.0
-huggingface-hub~=0.36.2
-pandas~=2.3.3
-scikit-learn~=1.8.0
-setuptools==79.0.1
+<!-- 本地修订备注：删除原 README 内与 requirements.txt 不一致的依赖清单，统一以 requirements.txt 为准。原 numpy~=1.24.4 改为 numpy~=1.26.4；原 ftfy~=6.3.1 改为 ftfy==6.1.1。前者是为满足 SAM3 的 numpy>=1.26,<2 要求，后者是为满足 SAM3 的 ftfy==6.1.1 要求；两项均已随 requirements.txt 成功安装。 -->
+依赖清单统一维护在项目根目录的 `requirements.txt`，请不要再从 README 复制另一份版本清单。
+
+<!-- 本地修订备注：requirements.txt 已包含 SAM2、SAM3 和 Ultralytics 的安装项。正常情况下直接执行 pip install -r requirements.txt；源码复制或 git+ 安装属于备用方式，不要在未确认导入来源的情况下重复安装多套版本。 -->
+当前 `requirements.txt` 已包含：
+
+```text
 git+https://github.com/facebookresearch/sam3.git
 git+https://github.com/facebookresearch/sam2.git
 ultralytics==8.4.49
 ```
 
->  **一键训练平台 UI 依赖说明（从旧环境升级必看）**：
-> 一键训练平台（TrainingPlatform）基于现代化 PySide6 UI 组件库 **MonkeyQt** 构建。如果您是在旧版 LabelPaw 环境基础上更新，只需在原虚拟环境中补充安装 `monkeyqt` 和 `monkeyqt-icons` 即可直接使用训练平台：
-> ```bash
-> pip install monkeyqt>=0.2.5 monkeyqt-icons>=2.1.2
-> ```
+<!-- 修订备注：替换原来“只需安装 PyPI monkeyqt 即可”的说法。该包能安装，但本项目运行时缺少所需 API；以下处理来自本机成功启动的实际过程。 -->
+**MonkeyQt 兼容性处理（本机已验证）**：仅安装 `requirements.txt` 中的 PyPI `monkeyqt` 后，项目运行时缺少所需 API。本机将 MonkeyQt 源码克隆至 `/tmp/MonkeyQt-source` 并以 editable 方式安装，然后将环境中旧的 `site-packages/monkeyqt` 目录改名；完成后 LabelPaw 界面可以正常启动。激活 `yolo` 环境后执行：
+
+```bash
+git clone https://github.com/luohuabuxiema/MonkeyQt.git /tmp/MonkeyQt-source
+pip install -e /tmp/MonkeyQt-source
+mv /home/cjr/miniconda3/envs/yolo/lib/python3.11/site-packages/monkeyqt /home/cjr/miniconda3/envs/yolo/lib/python3.11/site-packages/monkeyqt-old
+```
+
+如果 `/tmp/MonkeyQt-source` 已存在，跳过 `git clone`；如果 `monkeyqt-old` 已存在或 `monkeyqt` 已不存在，不要重复执行 `mv`。
+
+验证 MonkeyQt 导入路径和项目模块：
+
+```bash
+python -c "import monkeyqt; print(monkeyqt.__file__); from monkeyqt.themes.engine import ThemeEngine; from monkeyqt import MkMessageBox, MkSkeleton, MkSkeletonBlock, MkChartDashboard; print('MonkeyQt API 正常')"
+cd ~/下载/LabelPaw
+python -c "from TrainingPlatform.ui.main_window import MainWindow; print('训练平台导入正常')"
+python main.py
+```
+
+以上路径对应本机 Conda 安装位置；其他机器需先确认并替换为自身环境的 `site-packages` 路径。该步骤仅记录本机已成功使用的旧目录遮蔽处理，不代表已验证通用安装流程。
 > - **MonkeyQt 组件库使用文档**：[https://monkeyqt.lhbxm.top/](https://monkeyqt.lhbxm.top/)
 > - **MonkeyQt 官方源码仓库**：[https://github.com/luohuabuxiema/MonkeyQt](https://github.com/luohuabuxiema/MonkeyQt)
 
@@ -219,9 +178,9 @@ triton离线安装包下载地址：[https://hf-mirror.com/madbuda/triton-window
 
 参考链接：[https://blog.csdn.net/qq_42910179/article/details/155606159](https://blog.csdn.net/qq_42910179/article/details/155606159/)
 
-### 2.  sam3、sam2、Ultralytics 源码安装方式
+### 2. SAM2、SAM3、Ultralytics 的备用源码方式（可选）
 
-为了确保 SAM2、SAM3、Ultralytics（YOLO） 能够正常工作，你需要去官方仓库下载源码并放置在 `LabelPaw` 根目录下。因为官方库在不断更新，采用源码方式能最大程度保证兼容性。
+`requirements.txt` 已经包含 SAM2、SAM3 和 Ultralytics 的安装项，正常情况下不需要重复执行本节。只有在依赖安装失败，或你明确要使用本地源码时，才选择下面的源码方式；不要同时重复安装两套版本。
 
 **官方源码地址**：
 
@@ -229,15 +188,15 @@ triton离线安装包下载地址：[https://hf-mirror.com/madbuda/triton-window
 - **SAM3**: [https://github.com/facebookresearch/sam3](https://github.com/facebookresearch/sam3)
 - **Ultralytics (YOLO)**: [https://github.com/ultralytics/ultralytics](https://github.com/ultralytics/ultralytics)
 
-**操作步骤**：
+**本地源码方式操作步骤**：
 
 1. 访问上述 GitHub 地址，点击绿色的 **Code** 按钮，选择 **Download ZIP**。
 2. 解压下载的压缩包。
 3. **重要**：压缩包内往往包含文档、测试用例等很多文件。只需要把解压后里面的**核心代码文件夹**（下载完可以看到有对应名称的 `sam2`、`sam3`、`ultralytics` 文件夹）。
 4. 将这三个文件夹（`sam2`, `sam3`, `ultralytics`）直接粘贴到 `LabelPaw` 的根目录下。
 
-**通过命令行直接安装（可选，推荐进阶用户）**：
-如果你不想手动下载和复制文件夹，可以直接使用 pip 从 GitHub 源码或 PyPI 进行安装：
+**通过命令行直接安装（与上面的复制方式二选一）**：
+如果你不想手动下载和复制文件夹，可以直接使用 pip 从 GitHub 源码安装：
 
 ```bash
 # 安装 SAM2
@@ -247,7 +206,7 @@ pip install git+https://github.com/facebookresearch/sam2.git
 pip install git+https://github.com/facebookresearch/sam3.git
 
 # 安装 Ultralytics
-pip install ultralytics
+pip install ultralytics==8.4.49
 ```
 
 > ⚠️ **`git+` 安装方式注意事项**：
@@ -349,6 +308,22 @@ python TrainingPlatform/main_app.py
 | **M** | 触发 YOLO 模型智能推理 | **E** | 快速修改当前选中目标的类别 |
 | **Del / Backspace** | 删除当前选中的标注目标 | **Ctrl + Z** | 撤销上一步操作 (支持 20 步) |
 | **Ctrl + Y** | 重做操作 (Ctrl+Shift+Z) | **Z / X / C / V** | OBB 旋转框高精度角度微调 |
+
+<!-- 本地修订备注（2026-11-17）：数字键快捷键按照标签名称精确匹配，不按类别列表顺序映射。 -->
+| **0～9** | 选择名称恰好为对应数字的类别，例如按 `2` 选择标签 `2` |  |  |
+
+<!-- 本地修订备注（2026-11-17）：新增右键删除类别功能，删除操作会修改当前数据集标注文件。 -->
+#### 类别管理补充功能
+
+在右侧类别列表中右键点击类别，选择 **“删除类别”** 并确认后，程序会：
+
+- 删除当前画布中属于该类别的标注对象；
+- 从当前类别列表中移除该类别；
+- 删除 JSON/XML 标注文件中对应类别的标注对象；
+- 删除 YOLO `.txt` 中该类别的标注行，并将后续类别编号减一；
+- 更新类别文件、类别树和当前画布，并执行自动保存。
+
+该操作会修改当前数据集文件，正式数据集操作前建议先备份图片和标注文件。
 
 ---
 
@@ -471,6 +446,13 @@ flip_idx: [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15]
    - `last.pt`：最终轮次检查点权重（用于断点续训）。
 3. **工业模型导出**：
    - 在实验详情页面点击 **“模型导出”**，可一键将 `best.pt` 转换为 **ONNX**、**TensorRT (Engine)**、**TorchScript** 等格式，便于后续在边缘设备或生产环境高性能部署。
+
+<!-- 本地修订备注（2026-11-17）：只说明推理页面的显示修正，不改变模型权重、检测结果或训练流程。 -->
+4. **推理预测界面颜色统一**：
+   - 图片中的检测框和右侧“识别目标”图例现在使用同一个类别颜色映射；
+   - 同一类别的多个检测目标使用相同颜色；
+   - 该修改只影响界面显示，不改变模型权重、检测框坐标、类别名称、置信度或训练逻辑；
+   - 修改代码后需要重启 LabelPaw，再重新进入“推理预测”页面上传图片才能看到效果。
 
 ---
 
