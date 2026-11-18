@@ -1,3 +1,4 @@
+
 <div align="center">
   <p>
     <a href="https://github.com/luohuabuxiema/LabelPaw" target="_blank">
@@ -7,232 +8,195 @@
 </div>
 
 
-# LabelPaw - Intelligent Image Annotation & Model Training System (v3.0.0)
-## Foreword
-Due to the project's need for dataset annotation, I previously used tools like labelme and labelimg. Therefore, I decided to combine excellent computer vision models such as SAM2, SAM3, and YOLO pose estimation to develop a smarter and more efficient annotation tool. After multiple iterations, the system has welcomed its brand-new **v3.0.0 release** (featuring a one-click vision model training platform)!
+# LabelPaw - Intelligent Image Annotation and Model Training System (v3.0.0)
+## Introduction
+This project was created to meet the need for dataset annotation. After using tools such as labelme and labelimg, the author decided to combine excellent vision models including SAM2, SAM3, and YOLO pose estimation to develop a smarter and more efficient annotation tool. After multiple iterations, the system has reached the new **3.0.0 release**, which adds a one-click visual model training platform.
 
-Source Code Repository: [https://github.com/luohuabuxiema/LabelPaw](https://github.com/luohuabuxiema/LabelPaw)
+Source repository: [https://github.com/luohuabuxiema/LabelPaw](https://github.com/luohuabuxiema/LabelPaw)
 
 ## Changelog
 
-- **2026-10-15**: Major release **v3.0.0**! Introduced the **One-Click Vision Model Training Platform (TrainingPlatform)** built with modern UI library MonkeyQt. Features one-click YOLO model training, local hardware probe & environment diagnostics, real-time academic metric curve tracking (Precision/Recall/mAP/Loss), hyperparameter tuning, and checkpoint resumption, creating a complete end-to-end loop for "Smart Annotation + Dataset Conversion + Model Training".
-- **2026-05-28**: Added SAM 3 batch intelligent annotation, multi-prompt annotation support, and YOLO batch prediction annotation. Integrated new features including delete and multi-select checkbox buttons in the file list panel, along with other comprehensive UI optimizations.
-- **2026-05-27**: Removed the class selection dialog and unified class modification and creation within the right-side category history panel. Optimized operations including deleting and hiding specified target boxes in the category tree view.
-- **2026-05-15**: Added keypoint skeleton templates for human faces, hands, and pedestrians. Supports customizing keypoint templates and connectivity lines.
-- **2026-05-14**: Added the SAM2.1 model for intelligent point-click annotation, and integrated the Ultralytics YOLO model. The YOLO model can be used for intelligent annotation of rectangles, segmentations, keypoints, and OBB (Oriented Bounding Boxes).
-- **2026-05-13**: Perfected reciprocal format conversion for JSON/XML/YOLO, supported JSON to U-Net Mask generation, and one-click random dataset splitting.
-- **2026-05-10**: Added support for Light and Dark theme modes, providing a more comfortable visual experience.
-- **2026-04-12**: Built the PySide6-based foundational intelligent annotation interface (First Release).
-- **2026-04-10**: Integrated the next-generation SAM3, supporting hover preview, single-point rapid contour extraction, and text prompt-based full-image target auto-segmentation.
-- **2026-04-09**: Supported Rectangle (Rect), Polygon (Poly), and Point annotation, along with the original OBB rotated box control handle (supporting 360° seamless smooth rotation and slide-to-wall detection).
-- **2026-04-08**: Supported native saving of JSON, YOLO (.txt), and XML (Pascal VOC).
+- 2026-10-15: Upgraded to **v3.0.0**! Added the **one-click visual model training platform (TrainingPlatform)**, built with the modern MonkeyQt UI component library. It supports one-click YOLO model training, local hardware environment probing, real-time academic metric curve monitoring (Precision/Recall/mAP/Loss), hyperparameter tuning, and checkpoint resumption, forming an integrated workflow of “intelligent annotation + data conversion + model training.”
+- 2026-05-28: Added SAM3 batch intelligent annotation and multiple-prompt annotation, added YOLO26 batch annotation, and optimized the file list with delete and multi-select buttons.
+- 2026-05-27: Removed the class-selection window and unified class editing and creation in the history-class panel on the right. Added the ability to delete classes from the history and hide specified target boxes.
+- 2026-05-15: Added keypoint skeleton templates for faces, hands, pedestrians, and other targets, with support for custom keypoint templates and connections.
+- 2026-05-14: Added the SAM2.1 model for intelligent point-and-click annotation and integrated Ultralytics YOLO models. YOLO models can be used for intelligent rectangle, segmentation, keypoint, and OBB annotation.
+- 2026-05-13: Improved JSON/XML/YOLO format conversion, added JSON-to-U-Net mask conversion, and added one-click random dataset splitting.
+- 2026-05-10: Added Light and Dark theme modes for a more comfortable visual experience.
+- 2026-04-12: Released the first basic intelligent annotation interface built with PySide6.
+- 2026-04-10: Integrated the latest SAM3, supporting mouse-hover preview, fast single-point contour extraction, and automatic whole-image target segmentation from text prompts.
+- 2026-04-9: Added rectangle (Rect), polygon (Poly), and point (Point) annotation, as well as the original OBB rotated-box control handles with smooth 360° rotation and wall-following sliding detection.
+- 2026-04-8: Added native saving to JSON, YOLO (.txt), and XML (Pascal VOC).
+
+<!-- Local revision note (2026-11-17): The following three items are locally implemented and verified feature changes based on the official project; they are not part of the original official README. -->
+- **Local feature revisions**: Added number keys `0`–`9` for exact label-name selection in the annotation interface, right-click category deletion with synchronized annotation updates, and unified category colors between detection boxes and the right-side legend in the TrainingPlatform inference page.
 
 
-## System Introduction
+## System Overview
 
-The system is built based on PySide6 and integrates the **SAM2**, **SAM3**, and **Ultralytics YOLO** vision models, which significantly enhances annotation efficiency:
-- **Intelligent Point-Click & Prompt Segmentation**: When SAM intelligent annotation is enabled, it supports rapid target extraction in polygon, rectangle, and OBB modes.
-- **Keypoint Skeleton Templates & Intelligent Annotation**: A brand-new keypoint module with built-in templates for pedestrians, hands, faces, etc. You can customize keypoint templates for quick annotation, and optionally use the YOLO model for intelligent keypoint detection and automatic connection.
-- **One-Click Vision Model Training Platform (TrainingPlatform)**: Built with the MonkeyQt modern component library, supporting YOLO detection, segmentation, and pose training. Equipped with hardware environment probes, visual hyperparameter configuration, real-time academic metric curve tracking (Loss/Precision/Recall/mAP), and checkpoint resumption, seamlessly connecting data labeling to model training.
+Built with PySide6, the system integrates the **SAM2**, **SAM3**, and **Ultralytics YOLO** vision models to significantly improve annotation efficiency:
+- **Intelligent point-and-click and prompt-based segmentation**: When SAM intelligent annotation is enabled, targets can be extracted quickly in polygon, rectangle, OBB, and other modes.
+- **Keypoint skeleton templates and intelligent annotation**: The keypoint module includes pedestrian, hand, and face templates. You can customize keypoint templates for fast annotation, and optionally use YOLO models for intelligent keypoint detection and automatic connections.
+- **One-click visual model training platform (TrainingPlatform)**: Built on the modern MonkeyQt component library, it integrates YOLO object detection, instance segmentation, and pose-estimation training. It provides one-click hardware probing, visual training-hyperparameter configuration, real-time academic-curve monitoring (Loss/Precision/Recall/mAP), and checkpoint resumption, connecting the workflow from data annotation to model training.
 
-| Feature             | Interface Demonstration                                                     |
+<!-- Local revision note (2026-11-17): Only the interface features that have been actually verified are added here; the official model and training logic is unchanged. -->
+- **Local interface additions**: Number keys `0`–`9` select the class whose name exactly matches the pressed digit; right-clicking a category in the category list deletes it and synchronizes JSON/XML/YOLO annotations; inference-result detection-box colors in the training platform now match the right-side category legend.
+
+| Feature | Interface Demo |
 | ---------------- | ------------------------------------------------------------ |
-| SAM 3 Batch Annotation     | ![SAM 3 Batch](assets/demo_sam3_batch.png) |
-| YOLO Model Batch Prediction | ![YOLO Batch](assets/demo_yolo_batch.png) |
-| Keypoint Annotation       | ![Keypoint](assets/demo_keypoint.png) |
-| OBB Intelligent Annotation      | ![OBB](assets/demo_obb.png) |
-| Rectangle Intelligent Annotation     | ![Rectangle](assets/demo_rect.png) |
-| Keypoint Intelligent Annotation   | ![Keypoint Intelligent](assets/demo_keypoint_ai.png) |
-| Hand Keypoint Template (Dark)   | ![Hand Keypoint Dark](assets/demo_template_hand_dark.png) |
-| Built-in Keypoint Templates   | ![Built-in Keypoints](assets/demo_template_builtin.png) |
-| Face Keypoint Template   | ![Face Keypoints](assets/demo_template_face.png) |
-| Hand Keypoint Template (Light)   | ![Hand Keypoints Light](assets/demo_template_hand.png) |
-| Custom Keypoint Template | ![Custom Keypoints](assets/demo_template_custom.png) |
-| Dataset Processing Tool   | ![Dataset Tool](assets/demo_dataset_tool.png) |
-| Training Dashboard & Hardware Monitor | ![Training Dashboard](assets/training_dashboard.png) |
-| Project Metrics & Model Comparison | ![Project Metrics](assets/training_project_metrics.png) |
-| Create Task & Hardware Probe | ![Create Training Task](assets/training_create_modal.png) |
-| Experiment Curves & Academic Charts | ![Experiment Detail](assets/training_experiment_detail.png) |
+| SAM3 batch annotation | ![SAM3 batch intelligent annotation](assets/demo_sam3_batch.png) |
+| YOLO model batch annotation | ![YOLO model batch annotation](assets/demo_yolo_batch.png) |
+| Keypoint annotation | ![Keypoint skeleton annotation](assets/demo_keypoint.png) |
+| OBB intelligent annotation | ![OBB rotated-box intelligent annotation](assets/demo_obb.png) |
+| Rectangle intelligent annotation | ![Rectangle intelligent annotation](assets/demo_rect.png) |
+| Intelligent keypoint annotation | ![Intelligent keypoint annotation and automatic connections](assets/demo_keypoint_ai.png) |
+| Hand keypoint template (Dark) | ![Hand keypoint template in Dark mode](assets/demo_template_hand_dark.png) |
+| Built-in keypoint templates | ![Built-in keypoint template list](assets/demo_template_builtin.png) |
+| Face keypoint template | ![Face keypoint template](assets/demo_template_face.png) |
+| Hand keypoint template (Light) | ![Hand keypoint template in Light mode](assets/demo_template_hand.png) |
+| Custom keypoint template | ![Custom keypoint template](assets/demo_template_custom.png) |
+| Dataset processing tools | ![Dataset format conversion and splitting tools](assets/demo_dataset_tool.png) |
+| Training platform overview and hardware monitoring | ![Training platform overview](assets/training_dashboard.png) |
+| Project training metrics and model comparison | ![Project training metrics](assets/training_project_metrics.png) |
+| Create training task and environment probe | ![Create training task](assets/training_create_modal.png) |
+| Experiment convergence curves and academic charts | ![Experiment convergence curves](assets/training_experiment_detail.png) |
 
 
 
 ## 🙊 Core Features
 
-- **✨ AI Intelligent Assistance (SAM2/SAM3 Driven)**: Hover preview, single-point rapid contour extraction, and text prompt-based full-image target auto-segmentation.
-- **🦴 Keypoint Skeleton Templates & Intelligent Annotation (YOLO Driven)**: Supports intelligent annotation for rectangles, segmentations, OBB, and keypoints. Keypoints feature built-in pedestrian (17 points), face (68 points), and hand (21 points) templates. Keypoint annotation supports custom skeleton templates.
-- **🚀 One-Click Vision Model Training**: Built-in integrated training platform (TrainingPlatform) supporting rapid training for YOLO detection, segmentation, and pose models, featuring academic multi-curve comparison dashboards, real-time hardware monitoring, and task management.
-- **📐 All-round Annotation Modes**: Rectangle (Rect), Polygon (Poly), Point, OBB rotated box, and Keypoint (Pose).
-- **🔄 Ultimate OBB Interaction**: Rotated box control handle with 360° stepless smooth rotation and slide-to-wall detection.
-- **💾 Multi-Format Conversion & Export**: Native support for saving JSON, YOLO (.txt), and XML (Pascal VOC), and one-click generation of U-Net Masks.
-- **🗄️ Dataset Processing Workflow**: Supports train/val/test set random splitting by custom proportions.
+- **✨ AI intelligent assistance (SAM2/SAM3 powered)**: Mouse-hover preview, fast single-point contour extraction, and automatic whole-image target segmentation from text prompts.
+- **🦴 Keypoint skeleton templates and intelligent annotation (YOLO powered)**: Supports intelligent rectangle, segmentation, OBB, and keypoint annotation. Built-in keypoint templates include pedestrians (17 keypoints), faces (68 keypoints), and hands (21 keypoints). Keypoint annotation supports custom skeleton templates.
+- **🚀 One-click visual model training**: Includes the integrated TrainingPlatform, supporting rapid training of YOLO object detection, instance segmentation, pose-estimation, and other models, with academic multi-curve comparison dashboards, real-time hardware monitoring, and task management.
+- **📐 Full annotation modes**: Rectangle (Rect), polygon (Poly), point (Point), OBB rotated box, and keypoint (Pose).
+- **🔄 Advanced OBB interaction**: Rotated-box control handles with smooth 360° rotation and wall-following sliding detection.
+- **💾 Multi-format conversion and export**: Native JSON, YOLO (.txt), and XML (Pascal VOC) saving, with one-click U-Net mask generation.
+- **🗄️ Dataset processing workflow**: Supports splitting datasets into training, validation, and test sets according to a specified ratio.
 
 ---
 
-## 🛠️ Deployment & Execution Environment
+## 🛠️ Deployment and Runtime Environment
 
 ### 1. Basic Environment Dependencies
 
-Python 3.10+ is recommended.
+<!-- Revision note (2026-11-17): The locally verified environment is Linux, the Conda environment yolo, and Python 3.11. This does not mean that other platforms have been verified. -->
+The environment verified in this setup is Linux, the Conda environment `yolo`, and Python 3.11.
 
-Create a virtual environment with the following command:
-
-```bash
-conda create -n py311 python==3.11.5
-```
-Activate the newly created virtual environment:
+Create the virtual environment:
 
 ```bash
-conda activate py311 
+conda create -n yolo python=3.11
 ```
-
-
-First, install the necessary PyTorch dependency:
-
-Install `torch>=2.5.0` separately. PyTorch official website: [https://pytorch.org/](https://pytorch.org/get-started/previous-versions/?_gl=1*r08hqw*_up*MQ..*_ga*MTg1ODQzMTE5LjE3NzU4ODk5NDI.*_ga_469Y0W5V62*czE3NzU4ODk5NDEkajYwJGwwJGgw/)
-![PyTorch Website](assets/env_pytorch_website.png)
-
-**💡 PyTorch Installation Guidelines (Must-read for beginners)**
-
-Please verify the following key points before installing PyTorch to avoid post-installation runtime errors:
-
-**1. Confirm Graphics Card Support and CUDA Version (Extremely Important)**
-* **Applicable OS**: This tutorial is based on the Windows environment.
-* **How to Check**: Press `Win + R` keys, type `cmd` to open the command prompt, type `nvidia-smi`, and press Enter. In the top right corner of the displayed table, find the **CUDA Version**.
-![nvidia-smi](assets/env_nvidia_smi.png)
-
-* **Version Matching Requirement**: The PyTorch CUDA version you download (such as `cu118` or `cu121` in the command) **must be less than or equal to** the CUDA Version shown on your computer. If your computer does not have a dedicated NVIDIA GPU, or if you cannot find this info, please choose the **CPU version** command from the official website.
-
-
-**2. Choose either Conda or Pip Command**
-
-Install the specified version based on your computer. If the `conda` command gets stuck, you can try configuring domestic mirrors (Tsinghua/USTC) in the terminal first, and then remove `-c pytorch -c nvidia` at the end of the command (since `-c` forces the download from official foreign channels):
+Activate the virtual environment:
 
 ```bash
-conda install pytorch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0  pytorch-cuda=11.8 -c pytorch -c nvidia
+conda activate yolo
 ```
 
-The above command usually fails to install in most cases. Therefore, it is highly recommended to use the Alibaba Cloud wheels mirror. The `whl` packages for PyTorch GPU can be viewed at: [https://mirrors.aliyun.com/pytorch-wheels/](https://mirrors.aliyun.com/pytorch-wheels/)
-
-The `cu` version at the end must correspond to your CUDA version (e.g., `cu118` for CUDA 11.8).
-
+<!-- Revision note: Replaced the original Windows/CUDA general instructions and several unverified installation commands with the Conda command actually executed in this setup. -->
+The PyTorch/CUDA installation command actually executed in this setup is:
 ```bash
--f  https://mirrors.aliyun.com/pytorch-wheels/cu118
-```
-CUDA 11.8 Installation Command:
-```bash
-pip install torch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 -f  https://mirrors.aliyun.com/pytorch-wheels/cu118
-```
-CUDA 12.1 Installation Command:
-
-```bash
-pip install torch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 -f  https://mirrors.aliyun.com/pytorch-wheels/cu121
+conda install pytorch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 pytorch-cuda=11.8 -c pytorch -c nvidia
 ```
 
-**3. Verify Installation**
-After the installation completes, check if PyTorch is running properly. In the terminal, type `python` and execute the following:
-```python
-import torch
-print(torch.__version__)
-print(torch.cuda.is_available())
-print(torch.cuda.device_count())
-print(f"CUDA: {torch.version.cuda}")
-```
-If it outputs `True`, congratulations, CUDA is successfully configured! If it outputs `False`, it means PyTorch was installed in CPU-only mode or your CUDA version is mismatched, which requires uninstallation and reinstallation.
+To check whether Python can import PyTorch, activate the `yolo` environment and run `python -c "import torch; print(torch.__version__)"`. In this setup, the Conda package list was confirmed to contain PyTorch 2.5.0, TorchVision 0.20.0, TorchAudio 2.5.0, and `pytorch-cuda` 11.8. This does not claim that CUDA inference or training has been verified here.
 
 ---
 
-After configuring PyTorch, run the following command in your virtual environment to install other required packages:
+
+Then install the project dependencies in the `yolo` environment:
 
 ```bash
 pip install -r requirements.txt
 ```
-```python
-pyside6~=6.4.2
-numpy~=1.24.4
-opencv-python~=4.11.0.86
-pillow~=10.4.0
-monkeyqt>=0.2.5
-monkeyqt-icons>=2.1.2
-einops~=0.8.2
-pycocotools~=2.0.11
-scipy~=1.15.3
-tqdm~=4.67.1
-iopath~=0.1.10
-matplotlib~=3.10.8
-timm~=1.0.26
-ftfy~=6.3.1
-psutil~=7.2.1
-torchmetrics~=1.5.0
-omegaconf~=2.3.0
-numba~=0.64.0
-huggingface-hub~=0.36.2
-pandas~=2.3.3
-scikit-learn~=1.8.0
-setuptools==79.0.1
+<!-- Local revision note: Removed the dependency list in the original README because it did not match requirements.txt; requirements are now maintained in one place. The original numpy~=1.24.4 was changed to numpy~=1.26.4, and the original ftfy~=6.3.1 was changed to ftfy==6.1.1. The former satisfies SAM3's numpy>=1.26,<2 requirement, and the latter satisfies SAM3's ftfy==6.1.1 requirement. Both were successfully installed with requirements.txt. -->
+The dependency list is maintained in the project-root `requirements.txt`. Do not copy a separate version list from the README.
+
+<!-- Local revision note: requirements.txt already contains installation entries for SAM2, SAM3, and Ultralytics. Normally run pip install -r requirements.txt directly. Source-copy or git+ installation is a fallback; do not install multiple sets of versions without first confirming their import sources. -->
+The current `requirements.txt` contains:
+
+```text
 git+https://github.com/facebookresearch/sam3.git
 git+https://github.com/facebookresearch/sam2.git
 ultralytics==8.4.49
 ```
 
-> 💡 **TrainingPlatform UI Dependencies (Essential for Upgrading from Older Environments)**:
-> The one-click model training platform (TrainingPlatform) is built with the modern PySide6 UI component library **MonkeyQt**. If you are upgrading from an existing LabelPaw environment, you only need to install `monkeyqt` and `monkeyqt-icons`:
-> ```bash
-> pip install monkeyqt>=0.2.5 monkeyqt-icons>=2.1.2
-> ```
-> - **MonkeyQt Documentation**: [https://monkeyqt.lhbxm.top/](https://monkeyqt.lhbxm.top/)
-> - **MonkeyQt Source Repository**: [https://github.com/luohuabuxiema/MonkeyQt](https://github.com/luohuabuxiema/MonkeyQt)
-
-> Note: To use the AI intelligent annotation assistant, please make sure `sam3`, `sam2`, and `ultralytics` libraries along with their dependencies are correctly configured. If installing `sam3`, `sam2`, or `ultralytics` fails via pip, you can also install them using source code as detailed below.
-
-#### Troubleshooting Common Installation Errors
-
-**(1) Environment creation fails, reporting issues:**
-![Conda Error](assets/err_conda_create.png)
-
-* **Solution**: Go to `C:\Users\YourUsername` and delete the `.condarc` file.
-
-**(2) Error `ModuleNotFoundError: No module named 'pkg_resources'`:**
-
-![pkg_resources Error](assets/err_pkg_resources.png)
-
-* **Solution**: Downgrade the `setuptools` version. Set it explicitly to `79.0.1`:
+<!-- Revision note: Replaced the original statement that installing the PyPI monkeyqt package alone was sufficient. Although that package can be installed, the project was missing required APIs at runtime. The following procedure comes from the locally successful startup process. -->
+**MonkeyQt compatibility handling (verified locally)**: Installing only the PyPI `monkeyqt` package from `requirements.txt` left required APIs missing at runtime. In this setup, the MonkeyQt source was cloned to `/tmp/MonkeyQt-source` and installed in editable mode, and the old `site-packages/monkeyqt` directory in the environment was then renamed. After this, the LabelPaw interface started successfully. Activate `yolo` and run:
 
 ```bash
+git clone https://github.com/luohuabuxiema/MonkeyQt.git /tmp/MonkeyQt-source
+pip install -e /tmp/MonkeyQt-source
+mv /home/cjr/miniconda3/envs/yolo/lib/python3.11/site-packages/monkeyqt /home/cjr/miniconda3/envs/yolo/lib/python3.11/site-packages/monkeyqt-old
+```
+
+If `/tmp/MonkeyQt-source` already exists, skip `git clone`. If `monkeyqt-old` already exists or `monkeyqt` no longer exists, do not run `mv` again.
+
+Verify the MonkeyQt import path and project modules:
+
+```bash
+python -c "import monkeyqt; print(monkeyqt.__file__); from monkeyqt.themes.engine import ThemeEngine; from monkeyqt import MkMessageBox, MkSkeleton, MkSkeletonBlock, MkChartDashboard; print('MonkeyQt API 正常')"
+cd ~/下载/LabelPaw
+python -c "from TrainingPlatform.ui.main_window import MainWindow; print('训练平台导入正常')"
+python main.py
+```
+
+The paths above correspond to the local Conda installation. On another machine, first confirm and replace the path with that machine's `site-packages` path. This section only records the old-directory shadowing procedure that successfully worked locally; it is not a claim that a general installation procedure has been verified.
+> - **MonkeyQt component-library documentation**: [https://monkeyqt.lhbxm.top/](https://monkeyqt.lhbxm.top/)
+> - **Official MonkeyQt source repository**: [https://github.com/luohuabuxiema/MonkeyQt](https://github.com/luohuabuxiema/MonkeyQt)
+
+> Note: If you need intelligent assistance, make sure that the `sam3`, `sam2`, and `ultralytics` libraries and their dependencies are correctly configured. If installation of the SAM3, SAM2, or Ultralytics libraries above fails, the source-installation tutorial below is also available.
+
+#### Errors Encountered During Installation
+
+(1) The virtual environment could not be created:
+![Conda virtual-environment creation error](assets/err_conda_create.png)
+
+Solution: Go to `C:\Users\你的用户` and delete the `.condarc` file.
+
+(2) Error: `ModuleNotFoundError: No module named ‘pkg_resources‘`
+
+![Missing pkg_resources error](assets/err_pkg_resources.png)
+
+Solution: Downgrade the `setuptools` package. The version installed in this setup was 79.0.1.
+
+```python
 pip install setuptools==79.0.1
 ```
-![setuptools Installation](assets/fix_setuptools.png)
+![Successful installation of the older setuptools version](assets/fix_setuptools.png)
 
 Reference: [https://blog.csdn.net/u014451778/article/details/158469881](https://blog.csdn.net/u014451778/article/details/158469881/)
 
-**(3) Error `ModuleNotFoundError: No module named 'triton'`:**
-![Triton Error](assets/err_triton_missing.png)
+(3) Error: `ModuleNotFoundError: No module named ‘triton‘`
+![Missing triton package error](assets/err_triton_missing.png)
 
-* **Solution**: Download the offline installation wheels package for Windows and install separately.
-* **Triton offline wheels download path**: [https://hf-mirror.com/madbuda/triton-windows-builds](https://hf-mirror.com/madbuda/triton-windows-builds/)
+Solution: Download an offline installation package and install it separately.
 
-![Triton Downloads](assets/triton_wheel_download.png)
+Triton offline package download: [https://hf-mirror.com/madbuda/triton-windows-builds](https://hf-mirror.com/madbuda/triton-windows-builds/)
+
+![Triton offline wheel download page](assets/triton_wheel_download.png)
 
 Reference: [https://blog.csdn.net/qq_42910179/article/details/155606159](https://blog.csdn.net/qq_42910179/article/details/155606159/)
 
-### 2. Source Code Installation for SAM3, SAM2, and Ultralytics
+### 2. Optional Fallback Source Installation for SAM2, SAM3, and Ultralytics
 
-To ensure that SAM2, SAM3, and Ultralytics (YOLO) work optimally, you can download their source code from the official repositories and place them in the `LabelPaw` root directory. Since official libraries are constantly updating, the source code method guarantees the best compatibility.
+`requirements.txt` already contains installation entries for SAM2, SAM3, and Ultralytics. Normally, you do not need to repeat this section. Use the source-installation method only if dependency installation fails or if you explicitly want to use local source code; do not install two sets of versions at the same time.
 
-**Official Repositories**:
+**Official source repositories**:
 
 - **SAM2**: [https://github.com/facebookresearch/sam2](https://github.com/facebookresearch/sam2)
 - **SAM3**: [https://github.com/facebookresearch/sam3](https://github.com/facebookresearch/sam3)
 - **Ultralytics (YOLO)**: [https://github.com/ultralytics/ultralytics](https://github.com/ultralytics/ultralytics)
 
-**Manual Steps**:
+**Steps for local source installation**:
 
-1. Click the green **Code** button and select **Download ZIP** on the respective GitHub page.
-2. Unzip the downloaded zip file.
-3. **Important**: The unzipped packages contain documents, tests, and many extra files. You only need the **core code directory** (the inner folder named exactly `sam2`, `sam3`, or `ultralytics`).
-4. Copy these three core code folders (`sam2`, `sam3`, `ultralytics`) and paste them directly into the root directory of `LabelPaw`.
+1. Visit the GitHub addresses above, click the green **Code** button, and select **Download ZIP**.
+2. Extract the downloaded archive.
+3. **Important**: The archive often contains documentation, tests, and many other files. Only use the **core code folders** inside the extracted archive; they are the folders named `sam2`, `sam3`, and `ultralytics`.
+4. Paste these three folders (`sam2`, `sam3`, and `ultralytics`) directly into the root directory of `LabelPaw`.
 
-**Installation via command line (Optional, recommended for advanced users)**:
-If you do not want to download and copy folders manually, you can use pip to install directly from the Git source:
+**Direct command-line installation (choose this or the copy method above)**:
+If you do not want to download and copy the folders manually, install the source code directly from GitHub with pip:
 
 ```bash
 # Install SAM2
@@ -241,120 +205,138 @@ pip install git+https://github.com/facebookresearch/sam2.git
 # Install SAM3
 pip install git+https://github.com/facebookresearch/sam3.git
 
-# Install Ultralytics (YOLO)
-pip install ultralytics
+# Install Ultralytics
+pip install ultralytics==8.4.49
 ```
 
-> ⚠️ **Notes for `git+` installation method**:
-> 1. **Git required**: Your system must have [Git](https://git-scm.com/) installed and configured in your environment PATH, otherwise the command will fail.
-> 2. **Network connectivity**: Due to GitHub instability in some regions, using `git+https://...` may encounter connection timeouts. We suggest users configure a command-line proxy or preferentially use the **manual ZIP download and unzip** method above, which is the most reliable.
+> ⚠️ **Notes on the `git+` installation method**:
+> 1. **Git is required**: Git must be installed and configured on your computer in advance; otherwise, the command will fail directly.
+> 2. **Network access to GitHub**: Because GitHub access can be unstable in some regions of China, using `git+https://...` may result in a timeout or connection failure. Users in China are advised to:
+>    - Enable a suitable network connection and temporarily configure a Git proxy in the command line.
+>    - Or preferably use the official source-download-and-extract method above, which is more reliable.
 
-### 3. Model Download & Path Configuration
+### 3. Model Download and Configuration Changes
 
-**Model Download & Directory Structure**:
+**Model download and storage**:
 
-To enable intelligent annotation features, you need to download corresponding weight files (`.pt`) and organize them under a standard directory layout.
+To enable intelligent annotation, download the required weight files (`.pt`) and organize them according to the directory structure below.
 
-**1. Recommended Model Directory Structure**
-Please set up your model folders under the project root exactly as follows:
+**1. Recommended model directory structure**
+It is recommended to organize local model files as follows:
 ```text
  weights/
-      ├── sam_weights/          <-- Stores all Segment Anything (SAM) models (must be named exactly this way)
+      ├── sam_weights/          <-- Store all SAM-series models (this name is required)
       │    ├── sam3.pt
       │    ├── sam2.1_hiera_tiny.pt
       │    └── ...
-      ├── yolo26_weights/       <-- Stores YOLO26 models
+      ├── yolo26_weights/       <-- Store YOLO26-series models
       │    ├── yolo26n-pose.pt
       │    └── ...
-      ├── yolov8_weights/       <-- You can also create other YOLO model directories
+      ├── yolov8_weights/       <-- You may also create folders for other YOLO versions
       │    ├── yolov8n.pt
       │    └── ...
       └── ...
 ```
 
-**2. SAM Model Download & Setup**
+**2. SAM model download and storage**
 
-- **SAM 3 Model (3.5 GB)**: Download `sam3.pt` from the official repository or HuggingFace. Store it under `\weights\sam_weights\sam3.pt`.
-- **SAM 2.1 Models**:
+- **SAM 3 model (3.5 GB)**: Visit the official GitHub repository or search Hugging Face for `sam3`. Store it at `\weights\sam_weights\sam3.pt`.
+- **SAM 2.1 models**:
   - SAM 2.1 Tiny: [https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_tiny.pt](https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_tiny.pt)
   - SAM 2.1 Small: [https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt](https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt)
   - SAM 2.1 Base: [https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_base_plus.pt](https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_base_plus.pt)
   - SAM 2.1 Large: [https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_large.pt](https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_large.pt)
-  - Place them directly under `\weights\sam_weights\` (keep default filenames).
+  - Storage location: the `\weights\sam_weights\` directory (keep the default filenames).
 
-**3. YOLO Model Download & Setup**
-- **YOLO Models**: Download latest weights (YOLOv8, YOLO11, YOLOv26, etc.) from the official repository. For Pose Estimation, download pose-specific models (such as `yolo26n-pose.pt`).
-- **Place them** in the corresponding folder, e.g., `\weights\yolo26_weights\`. *(Note: You can place any custom-trained YOLO model here and the software will scan and load it automatically!)*
+**3. YOLO model download and storage**
+- **YOLO models**: Visit the official YOLO GitHub repository or the corresponding framework page to download the latest weights, such as yolov8, yolo11, or yolo26. For pose estimation, models with the `-pose` suffix are recommended, such as `yolo26n-pose.pt`.
+- **Storage location**: Store models in the corresponding folder, such as `\weights\yolo26_weights\`. *(Note: You can also put your own trained YOLO models in the corresponding folder, and the software can read them automatically.)*
 
-**Modifying Model Base Path**:
-For the system to detect your weights, you have two options:
+**Changing the model path**:
+To allow the system to find the downloaded models:
 
-> **Option 1**: Create a folder named `weights` directly in the project root directory, and place models inside following the structure above.
+> Method 1: Create a `weights` folder in the project root and store the models there according to the structure described above.
 
-> **Option 2**: Create a `weights` folder elsewhere on your system. **Only** change one base path variable in the codebase:
-> Open `main.py`, `labelpaw/models/sam_client.py`, and `ui/model_selector_dialog.py`, find the `HARDCODED_DEV_DIR` variable, and change it to your local absolute path: **`HARDCODED_DEV_DIR = r"YourAbsolutePath\weights"`**
+> Method 2: Create a `weights` folder elsewhere and store the models there according to the structure described above. **Only** one base-path variable in the code needs to be changed:
+Open `main.py`, `labelpaw/models/sam_client.py`, and `ui/model_selector_dialog.py`. Find the `HARDCODED_DEV_DIR` variable and change it consistently to the absolute path of your local `weights` folder: **HARDCODED_DEV_DIR= r"你的绝对路径\weights"**
 
 
-*(Note: The system dynamically scans all folders matching `yolo*_weights` in the directory, so you just need to drop the weights inside the directory without any extra manual configuration!)*
+*(Note: The system automatically scans all subfolders matching `yolo*_weights` under this directory and loads the YOLO models, so you only need to place the models correctly and do not need to manually specify the YOLO subdirectory.)*
 
-**[Special Notice: Recommendations for Users Without a Dedicated GPU]**
-If your computer lacks an independent NVIDIA GPU or has limited system performance, it is strongly recommended to prioritize lightweight YOLO series models (such as models with "n" or "s" suffixes). SAM series models, even the tiny variant, are computationally intensive and may run slowly or cause UI freezes in pure CPU environments, whereas lightweight YOLO models maintain smooth processing speeds on CPU.
+**[Special note for users without a graphics card (GPU)]**
+If your computer does not have a dedicated GPU or has relatively low specifications, it is strongly recommended to use YOLO models first, such as lightweight models containing “n” or “s”. Even the tiny SAM models are relatively heavy; running them on a CPU-only system may be very slow or cause the software to become unresponsive, while lightweight YOLO models can still provide reasonable processing speed on a CPU.
 
-### 4. Start the Application
+### 4. Starting the System
 
-Once everything is configured, run the desired entry point from the project root directory:
+After completing all configuration, start the system from the project root as needed:
 
-- **Main Application (Integrated Image Annotation & Model Training Entry)**:
+- **Main system (integrated entry point for intelligent image annotation and the training platform)**:
 ```bash
 python main.py
 ```
-*(You can invoke the model training platform with one click from the left sidebar)*
+*(The model training platform can be launched with one click from the left toolbar of the annotation interface.)*
 
-- **Standalone One-Click Model Training Platform (TrainingPlatform)**:
+- **Run the one-click training platform independently (TrainingPlatform)**:
 ```bash
 python TrainingPlatform/main_app.py
 ```
 
 ---
 
-## 📖 User Operation Guide
+## 📖 User Guide
 
 ### 1. Intelligent Image Annotation Workflow (LabelPaw)
 
-#### 📋 Basic Annotation Steps
-1. **Open Directory**: Click "Open Directory" on the left sidebar to select your images folder.
-2. **Select Format**: In the left dropdown menu, choose the export annotation format (supports `JSON`, `YOLO`, `XML`).
-3. **Annotation Mode**: Select the target mode on the left toolbar (Rectangle, Polygon, Point, OBB Rotated Box, or Keypoint/Pose).
-4. **Intelligent Annotation**: Enable **SAM Intelligent Assistant** (Shortcut: `Q`).
-   - **SAM2 / SAM3 Models**: Supports real-time hover contour preview and single-click prompt segmentation; SAM3 supports text prompt queries (e.g., "car", "dog") for full-image automatic segmentation.
-   - **YOLO Models**: Switch and execute detection, segmentation, OBB, and pose pre-inference from the top toolbar.
-5. **Keypoint & Skeleton Templates**: In Keypoint mode, select preset templates (Human 17 keypoints, Face 68 keypoints, Hand 21 keypoints) or customize your own skeleton topologies.
-6. **Dataset Processing**: Click "Dataset Tool" on the toolbar to perform bidirectional format conversions (JSON/XML/YOLO), U-Net binary mask generation, and train/val/test split by custom ratios.
+#### 📋 Basic Annotation Workflow
+1. **Open a directory**: Click the **“Open Directory”** button on the left and select the folder containing the images.
+2. **Select the save format**: Select a format from the left dropdown menu (`JSON` / `YOLO` / `XML` are supported).
+3. **Select the annotation mode**: Select an annotation mode from the left toolbar. Rectangle, polygon, point, OBB rotated box, and keypoint skeleton modes are supported.
+4. **Intelligent assisted annotation**: Enable **“Intelligent Assistance”** with the shortcut `Q`.
+   - **SAM2 / SAM3 models**: Support real-time contour preview on mouse hover and fast single-point target-boundary extraction. SAM3 supports entering text prompts such as "car" or "dog" for whole-image automatic segmentation.
+   - **YOLO models**: Use the top toolbar to switch models and perform automatic preliminary inference for object detection, segmentation, rotated boxes, and pose estimation.
+5. **Keypoint/skeleton templates**: In keypoint mode, select built-in templates from the top bar (17-point human body, 68-point face, or 21-point hand), or customize keypoint template connections.
+6. **Dataset processing**: Click **“Dataset Conversion”** in the toolbar to convert between JSON/XML/YOLO formats, generate U-Net binary masks, and randomly split the dataset into training, validation, and test sets according to a custom ratio.
 
-#### ⌨️ Annotation Keyboard Shortcuts
+#### ⌨️ Annotation Shortcut Reference
 
-| Shortcut | Action Description | Shortcut | Action Description |
+| Shortcut | Function | Shortcut | Function |
 | :--- | :--- | :--- | :--- |
-| **A / ←** | Previous image | **D / →** | Next image |
-| **Ctrl + S** | Save current image annotations | **Q** | Toggle SAM Intelligent Assistant On/Off |
-| **R** | Switch to Rectangle mode (Rect) | **P** | Switch to Polygon mode (Poly) |
-| **O** | Switch to Rotated Box mode (OBB) | **T** | Switch to Keypoint/Skeleton mode (Pose) |
-| **M** | Trigger YOLO model pre-inference | **E** | Modify category label of selected shape |
-| **Del / Backspace** | Delete selected shape or point | **Ctrl + Z** | Undo last operation (up to 20 steps) |
-| **Ctrl + Y** | Redo operation (Ctrl+Shift+Z) | **Z / X / C / V** | Fine-tune OBB angle with precision |
+| **A / ←** | Switch to the previous image | **D / →** | Switch to the next image |
+| **Ctrl + S** | Manually save the current image annotation | **Q** | Enable / disable SAM intelligent assistance |
+| **R** | Switch to rectangle annotation mode (Rect) | **P** | Switch to polygon annotation mode (Poly) |
+| **O** | Switch to rotated-box annotation mode (OBB) | **T** | Switch to keypoint annotation mode (Pose) |
+| **M** | Trigger YOLO model intelligent inference | **E** | Quickly change the class of the currently selected target |
+| **Del / Backspace** | Delete the currently selected annotation target | **Ctrl + Z** | Undo the previous operation (supports 20 steps) |
+| **Ctrl + Y** | Redo the operation (Ctrl+Shift+Z) | **Z / X / C / V** | Fine angle adjustment for OBB rotated boxes |
+
+<!-- Local revision note (2026-11-17): Number-key shortcuts use exact label-name matching rather than mapping to the order of the class list. -->
+| **0–9** | Select the class whose name exactly matches the pressed digit; for example, press `2` to select the label `2` |  |  |
+
+<!-- Local revision note (2026-11-17): Added right-click category deletion; deletion modifies the current dataset annotation files. -->
+#### Additional Category Management
+
+Right-click a category in the category list on the right, select **“Delete Category”**, and confirm. The program will:
+
+- Delete annotation objects belonging to that category from the current canvas;
+- Remove the category from the current category list;
+- Delete the corresponding category objects from JSON/XML annotation files;
+- Delete rows for that category from the YOLO `.txt` file and decrement subsequent class IDs by one;
+- Update the category file, category tree, and current canvas, then save automatically.
+
+This operation modifies the current dataset files. Back up the images and annotation files before performing it on an official dataset.
 
 ---
 
-### 2. One-Click Vision Model Training Tutorial (TrainingPlatform)
+### 2. One-Click Visual Model Training Platform Tutorial (TrainingPlatform)
 
-The TrainingPlatform is built with the modern UI library **MonkeyQt**, designed to empower users to train, monitor, evaluate, and export deep learning vision models through an intuitive graphical interface without writing code.
+The one-click training platform (TrainingPlatform) is built on the modern MonkeyQt UI component library. It is designed to help users complete the full deep-learning vision-model workflow—including one-click training, real-time monitoring, and export—without writing complex code.
 
 #### 🛠️ 2.1 Preparation Before Training
 
-Before launching a training session, prepare the following essentials:
+Before starting training, make sure the following preparation is complete:
 
-##### 1. Dataset Preparation & Directory Structure
-After finishing annotation in LabelPaw, use the **Dataset Tool** on the toolbar to export and split your annotations into standard YOLO format:
+##### 1. Dataset Preparation and Standard Directory Structure
+After completing annotation with LabelPaw, use the **“Dataset Conversion”** function in the toolbar to export and split the annotations into a standard YOLO-format directory:
 ```text
 my_dataset/
 ├── images/
@@ -362,17 +344,17 @@ my_dataset/
 │   ├── val/            <-- Validation images
 │   └── test/           <-- Test images (optional)
 └── labels/
-    ├── train/          <-- Corresponding training label files (.txt)
-    ├── val/            <-- Corresponding validation label files (.txt)
-    └── test/           <-- Corresponding test label files (optional)
+    ├── train/          <-- Corresponding training annotation files (.txt)
+    ├── val/            <-- Corresponding validation annotation files (.txt)
+    └── test/           <-- Corresponding test annotation files (optional)
 ```
 
-##### 2. Prepare & Configure the `data.yaml` File
-Create a `data.yaml` inside your dataset directory (the platform includes an integrated in-app code editor to inspect and edit YAML on the fly):
+##### 2. Create/Configure the `data.yaml` File
+Create `data.yaml` in the dataset root directory. The platform includes an online editor that can load and modify it directly.
 
-- **Standard Tasks (Object Detection / Instance Segmentation / Rotated OBB)**:
+- **Standard tasks (object detection / instance segmentation / rotated-box OBB)**:
 ```yaml
-# Train and Val image paths (supports absolute paths or relative paths)
+# Training and validation paths (absolute paths or paths relative to the project root are supported)
 train: D:/datasets/my_dataset/images/train
 val: D:/datasets/my_dataset/images/val
 test: # D:/datasets/my_dataset/images/test (optional)
@@ -380,13 +362,13 @@ test: # D:/datasets/my_dataset/images/test (optional)
 # Number of classes
 nc: 2
 
-# Class names mapping
+# Class-name mapping
 names:
   0: dog
   1: cat
 ```
 
-- **Keypoint / Pose Estimation Task (Pose)**:
+- **Keypoint / pose-estimation tasks (Pose)**:
 ```yaml
 train: D:/datasets/my_pose_dataset/images/train
 val: D:/datasets/my_pose_dataset/images/val
@@ -395,129 +377,137 @@ nc: 1
 names:
   0: person
 
-# Keypoint shape: [number_of_keypoints, dimensions(x, y, visible)]
+# Keypoint dimensions: [number of keypoints, coordinate dimensions (x, y, visible)]
 kpt_shape: [17, 3]
-# Symmetry flip index mapping for data augmentation
+# Symmetric keypoint index mapping for horizontal-flip augmentation
 flip_idx: [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15]
 ```
 
-##### 3. Base Pretrained Model Weights
-- Supports YOLOv8, YOLO11, YOLO26 and other popular architectures.
-- Choose standard official weights (e.g., `yolov8n.pt`, `yolo11s.pt`, `yolo26n-seg.pt`, `yolo26n-pose.pt`). If not pre-downloaded, the platform will automatically fetch them online upon training start, or you can browse for local weights.
+##### 3. Prepare a Basic Pretrained Model
+- The platform supports YOLOv8, YOLO11, YOLO26, and other model series.
+- You may use official pretrained weights such as `yolov8n.pt`, `yolo11s.pt`, `yolo26n-seg.pt`, and `yolo26n-pose.pt`. If they have not been downloaded locally, they will be downloaded automatically when training starts; alternatively, place them locally and click **“Browse”** in the platform to select them.
 
-##### 4. Hardware Environment Requirements
-- **Dedicated NVIDIA GPU (Recommended)**: An NVIDIA GPU with CUDA-enabled PyTorch installed. The platform comes with an **automatic hardware probe** that identifies available GPUs, VRAM capacity (e.g., RTX 4090 24GB), and CUDA status upon launch.
-- **CPU Users**: Training on CPU is fully supported. For CPU execution, select lightweight models (e.g., `yolov8n`) with small batch sizes.
-
----
-
-#### 🚀 2.2 Step-by-Step Training Guide
-
-##### Step 1: Launch TrainingPlatform
-- **Integrated Entry**: In LabelPaw (`python main.py`), click the **"Model Training"** icon on the left sidebar.
-- **Standalone Entry**: Directly run `python TrainingPlatform/main_app.py` in your terminal.
-
-##### Step 2: Create or Select a Project
-1. Navigate to the **"Project Management"** view from the left menu.
-2. Click **"New Project"** in the top-right corner, enter a Project Name (e.g., `Road_Defect_Inspection`), select your task category (Detect, Segment, Pose, or OBB), and confirm.
-3. Click into your newly created project details page.
-
-##### Step 3: Configure Training Hyperparameters
-Click **"New Training Task"** to open the all-in-one configuration dialog:
-
-1. **Base Configuration (Model & Dataset)**:
-   - **Base Model**: Choose a preset model or browse for custom local `.pt` weights.
-   - **Dataset YAML**: Click "Browse" to select your `data.yaml`. The integrated editor on the right will preview the contents and allow immediate online modifications.
-2. **Core Hyperparameters**:
-   - **Epochs**: Default is `100` (typically set between `100` and `300`).
-   - **Batch Size**: Enter `auto` for automatic memory allocation, or manually set fixed values like `8`, `16`, `32`.
-   - **Image Size (ImgSz)**: Default is `640` (can be set to `1280` for high-resolution small object detection).
-   - **Task Name**: Name your experiment run (e.g., `exp1_baseline`).
-3. **Advanced Hyperparameters & Strategies (Collapsible Section)**:
-   - **Optimizer & Learning Rate**: Select `auto`, `SGD`, `Adam`, or `AdamW`; customize `lr0` (default 0.01), cosine LR schedule (`cos_lr`), and `warmup_epochs`.
-   - **Acceleration & Strategies**:
-     - **Automatic Mixed Precision (AMP)**: Enabled by default to accelerate training and reduce VRAM usage;
-     - **Patience**: Early stopping threshold (default 100);
-     - **Close Mosaic**: Disables Mosaic augmentation in the final N epochs to ensure convergence (default 10);
-     - **Resume Training**: Check "Resume" and select `last.pt` if a previous run was interrupted.
-   - **Augmentations**: Fine-tune Mosaic, Mixup, HSV jitter, Rotation degrees, and horizontal/vertical flip ratios.
-4. **Hardware Device Selection**:
-   - The probe displays detected GPUs (e.g., `0: NVIDIA GeForce RTX 4090`). Select target GPU devices and set the number of dataloader `workers` (recommended: 4 or 8).
-
-##### Step 4: Start Training & Real-Time Tracking
-1. Click **"Start Training"** in the bottom right corner.
-2. The task starts in the background and switches to the **"Real-Time Monitor"** dashboard:
-   - **Academic Dynamic Metrics Curves**: Displays real-time training and validation curves:
-     - **Loss Curves**: `train/box_loss`, `train/cls_loss`, `train/dfl_loss`, and validation loss;
-     - **Academic Evaluation**: `metrics/precision`, `metrics/recall`, `metrics/mAP50`, `metrics/mAP50-95`;
-     - Supports curve smoothing filters and multi-experiment comparisons.
-   - **Formatted Terminal Output**: Streams real-time progress bars, VRAM consumption, estimated completion time, and learning rate.
-   - **Hardware Probe Cards**: Displays real-time GPU VRAM usage percentage, GPU load, and CPU utilization.
-
-##### Step 5: Evaluation & Model Export
-1. Upon completion, academic evaluation charts are aggregated automatically:
-   - Confusion Matrix (`confusion_matrix.png`)
-   - PR Curves (`PR_curve.png`) and F1-Confidence Curves
-   - Validation ground-truth vs. model prediction comparisons (`val_batch_pred.jpg`)
-2. **Model Weights Archive**:
-   - `best.pt`: Best performing weights based on validation mAP;
-   - `last.pt`: Final checkpoint weights (for checkpoint resumption).
-3. **Production Model Export**:
-   - Under the experiment detail view, click **"Export Model"** to convert `best.pt` to **ONNX**, **TensorRT Engine**, **TorchScript**, etc., for deployment on edge devices and production environments.
+##### 4. Hardware Requirements
+- **Dedicated GPU (recommended)**: Use an NVIDIA GPU and install a CUDA-supported PyTorch version. The platform includes an **environment probe** that automatically detects the GPU model, VRAM size (for example, RTX 4090 24GB), and CUDA status at startup.
+- **Users without a GPU**: The platform supports **CPU training**. A lightweight model such as `yolov8n` or `yolo11n` is recommended, together with a small `batch` value.
 
 ---
 
-#### 🔄 2.3 Closed-Loop Annotation & Training Workflow
+#### 🚀 2.2 Detailed Training Steps
 
-In LabelPaw, annotation and model training form a complete continuous loop:
+##### Step 1: Start the Training Platform
+- **Integrated entry point**: Start LabelPaw (`python main.py`), then click the **“Model Training”** icon in the left navigation bar of the main interface.
+- **Independent entry point**: Run `python TrainingPlatform/main_app.py` directly in a terminal.
+
+##### Step 2: Create or Select a Training Project
+1. On first entry, open the **“Project Management”** page from the left navigation.
+2. Click **“New Project”** in the upper-right corner, enter a project name such as `Road_Defect_Inspection`, select a vision task type (object detection Detect / instance segmentation Segment / pose estimation Pose / rotated-box OBB), and confirm.
+3. Click to enter the details page of the created project.
+
+##### Step 3: Configure Training Task Hyperparameters (Train Configuration)
+Click **“New Training Task”** in the upper-right corner of the project details page. The system opens a full parameter-configuration window:
+
+1. **Basic configuration (model and data)**:
+   - **Base model**: Select a built-in preset model such as YOLOv8n or YOLO11s, or click the folder icon to load a local custom `.pt` weight file.
+   - **Dataset configuration**: Click **“Select Dataset”** and choose the prepared `data.yaml`. The YAML content is automatically loaded on the right side of the window and can be edited and saved online.
+2. **Core training hyperparameters**:
+   - **Epochs**: Set this according to the dataset size; `100`–`300` epochs are usually recommended.
+   - **Batch Size**: Enter `auto` for the platform to detect the optimal batch size based on the current VRAM, or manually enter a fixed value such as `8`, `16`, or `32`.
+   - **Image Size (ImgSz)**: The default is `640`; use `1280` when there are many small objects or when high-resolution images are needed.
+   - **Experiment name**: Name the training run, such as `exp1_baseline`.
+3. **Advanced hyperparameter tuning (collapsible panel)**:
+   - **Optimizer and learning rate**: Supports `auto`, `SGD`, `Adam`, and `AdamW`. You can configure the initial learning rate `lr0` (default `0.01`), cosine learning-rate decay `cos_lr`, and the number of learning-rate warmup epochs `warmup_epochs`.
+   - **Acceleration and training strategies**:
+     - **Automatic mixed precision (AMP)**: Enabled by default to substantially reduce VRAM usage and improve training speed;
+     - **Early stopping (Patience)**: Automatically stops when the metrics do not improve for N consecutive epochs (default `100`);
+     - **Close Mosaic**: Automatically disables Mosaic augmentation for the final N epochs to stabilize convergence (default `10`);
+     - **Resume**: If training was interrupted, select this option and specify `last.pt` to resume training seamlessly.
+   - **Data augmentation controls**: Mosaic, Mixup, HSV jitter, rotation (Degrees), and horizontal/vertical flip ratios can be adjusted.
+4. **Hardware and training-device probe**:
+   - The training-device selector at the bottom automatically detects available GPUs, such as `0: NVIDIA GeForce RTX 4090`. Select the target GPU number and specify the number of data-loading workers (`workers`, with 4 or 8 recommended).
+
+##### Step 4: Start Training and Monitor It in Real Time
+1. After confirming that the parameters are correct, click **“Start Training”** in the lower-right corner of the window.
+2. The task runs in the background and the interface switches to the **“Real-Time Monitoring”** dashboard:
+   - **Academic multi-metric convergence curves**: Dynamically draw the metrics for the current epoch:
+     - **Loss curves**: `train/box_loss`, `train/cls_loss`, `train/dfl_loss`, and validation loss;
+     - **Academic evaluation metrics**: `metrics/precision(B)`, `metrics/recall(B)`, `metrics/mAP50(B)`, and `metrics/mAP50-95(B)`;
+     - Supports switching curve-smoothing filters, focusing on a single curve, and comparing multiple experiments.
+   - **Formatted log console**: Displays the training progress bar, VRAM usage, estimated time, and learning rate in real time.
+   - **Hardware probe monitoring cards**: Dynamically display VRAM usage, GPU utilization, and system CPU load.
+
+##### Step 5: Evaluate the Experiment and Export the Model
+1. After training completes, the platform automatically summarizes the academic charts for the training run:
+   - Confusion matrix (`confusion_matrix.png`);
+   - PR curve (`PR_curve.png`) and F1-Confidence curve;
+   - Comparison between validation-set ground-truth annotations and model predictions (`val_batch_pred.jpg`).
+2. **Automatic weight-file archiving**:
+   - `best.pt`: The best model weights with the highest validation-set metrics;
+   - `last.pt`: The checkpoint from the final epoch, used for resuming training.
+3. **Industrial model export**:
+   - Click **“Model Export”** on the experiment details page to convert `best.pt` to **ONNX**, **TensorRT (Engine)**, **TorchScript**, and other formats for high-performance deployment on edge devices or in production environments.
+
+<!-- Local revision note (2026-11-17): This only documents the display correction on the inference page; model weights, detection results, and the training workflow are unchanged. -->
+4. **Consistent colors in the inference page**:
+   - Detection boxes in the image and the **“Detected Objects”** legend on the right now use the same class-color mapping;
+   - Multiple detected objects of the same class use the same color;
+   - This change affects only the interface display. It does not change model weights, detection-box coordinates, class names, confidence values, or training logic;
+   - After modifying the code, restart LabelPaw and re-enter the **“Inference”** page to upload an image before checking the effect.
+
+---
+
+#### 🔄 2.3 Seamless “Annotation–Training” Workflow
+
+In LabelPaw, annotation and training are not two separate tools; they form a closely integrated workflow:
 ```text
-┌─────────────────┐      Export Dataset (YOLO format)   ┌──────────────────────┐
-│  LabelPaw       │ ──────────────────────────────────> │  TrainingPlatform    │
-│  Smart Labeling │                                     │  Model Training      │
-└─────────────────┘                                     └──────────────────────┘
-        ▲                                                          │
-        │           Import generated best.pt weights               │
-        └──────────────────────────────────────────────────────────┘
+┌─────────────────┐      Dataset export (YOLO format)     ┌──────────────────────┐
+│  LabelPaw       │ ───────────────────────────────────> │  TrainingPlatform    │
+│  Intelligent    │                                      │  One-click visual    │
+│  image annotation│                                     │  model training      │
+└─────────────────┘                                      └──────────────────────┘
+        ▲                                                        │
+        │           Import generated best.pt weights              │
+        └────────────────────────────────────────────────────────┘
 ```
-1. Annotate a small batch of initial images (e.g., 100~200 images) in LabelPaw and export the dataset;
-2. Train your custom model with one click in TrainingPlatform to produce a task-specific `best.pt`;
-3. Place `best.pt` into LabelPaw's `weights/` directory;
-4. In LabelPaw, select this custom model and enable **Smart Assistant** to run automated pre-inference and batch annotations on subsequent large-scale unlabeled datasets, boosting annotation efficiency by over 10x!
+1. Annotate a small number of samples (for example, 100–200 images) with LabelPaw and export the dataset;
+2. Train with one click in TrainingPlatform to produce a `best.pt` for your own scenario;
+3. Put `best.pt` in LabelPaw's `weights/` directory;
+4. Return to the LabelPaw annotation interface, select this model at the top, and enable **Intelligent Assistance**. The trained model can then perform **fully automatic batch pre-annotation** on thousands of subsequent images, improving annotation efficiency by more than 10 times.
 
 ---
 
-#### 💡 2.4 FAQ & Training Tips
+#### 💡 2.4 Training FAQ and Tuning Tips
 
-- **Q1: Encountering `CUDA Out of Memory (OOM)` errors upon starting training?**
-  - **Solutions**:
-    1. Lower the `Batch Size` (e.g., from 32 to 16, 8, or 4);
-    2. Lower the `ImgSz` (e.g., from 1280 to 640 or 480);
-    3. Ensure `AMP (Automatic Mixed Precision)` is enabled in Advanced Settings;
-    4. Reduce the number of dataloader `workers` (set to 2 or 4).
-- **Q2: Can I train without an independent GPU?**
-  - **Solutions**: Yes. Select `CPU` in the training device setting, choose a lightweight architecture like `yolov8n`, set `batch` to 4, and start with fewer epochs for validation.
-- **Q3: How do I resume an interrupted training session?**
-  - **Solutions**: In the "New Training Task" dialog, check **"Resume"** under advanced settings, point the base model to the `last.pt` checkpoint of the interrupted run, and click Start Training to continue seamlessly.
+- **Q1: Training reports insufficient VRAM (CUDA Out of Memory / OOM). What should I do?**
+  - **Solution**:
+    1. Reduce the `Batch Size` when creating the task, for example from 32 to 16, 8, or 4;
+    2. Reduce the `ImgSz`, for example from 1280 to 640 or 480;
+    3. Confirm that `AMP (automatic mixed precision)` is enabled in the advanced settings;
+    4. Reduce the number of `workers` to 2 or 4.
+- **Q2: Can I train without a dedicated GPU?**
+  - **Solution**: Yes. Select `CPU` as the training device, use a lightweight `yolov8n` model, set `batch` to 4, and use a small number of `epochs` for an initial check.
+- **Q3: How can I resume after an unexpected interruption?**
+  - **Solution**: Open the new training task window, enable **“Resume”** in the advanced settings, select the `last.pt` weight file from the interrupted experiment in the base-model path, and click Start Training. Training will continue from the interrupted epoch.
 
 ---
 
-## 🤝 Secondary Development Welcome
+## 🤝 Contributing and Further Development
 
-The application features a modular design with high cohesion and low coupling. UI and model inference are separated cleanly:
-- `main.py`: Main control window and event router.
-- `labelpaw/`: Core image annotation packages including the draw canvas (`graphics/canvas.py`), dataset formatting exporter (`data/exporter.py`), SAM intelligent model inference (`models/sam_client.py`), and YOLO pose/detection inference (`models/yolo_predictor.py`).
-- `TrainingPlatform/`: One-click model training platform package built on MonkeyQt, including training task orchestration (`core/`), modern views and academic charts (`ui/`), etc.
-- `ui/`: Custom widgets and theme styles.
+The system uses a modular design with high cohesion and low coupling, separating the frontend UI from the underlying model inference.
+- `main.py`: Main interface and event routing.
+- `labelpaw/`: Core image-annotation modules, including the drawing canvas (`graphics/canvas.py`), data-format export (`data/exporter.py`), SAM intelligent-model inference (`models/sam_client.py`), and YOLO intelligent-model inference (`models/yolo_predictor.py`).
+- `TrainingPlatform/`: One-click visual model training platform module built with the MonkeyQt component library, including the training-task scheduler (`core/`), modern UI views, and academic charts (`ui/`).
+- `ui/`: Graphical components and theme customization.
 
-We welcome developers to Fork the repository and submit PRs!
+Developers are welcome to fork the project and submit pull requests!
 
 ## License
 
-This project is licensed under the GPL-3.0 License. If you utilize this code in commercial or non-commercial projects, please comply with this license and open-source your derivative modifications. If this project helps you, please star our repository!
+This project is licensed under GPL-3.0. If you use this code in a commercial or non-commercial project, please comply with the license and open-source your derivative modifications as required. Thank you for your support; if this project helps you, please give the repository a Star!
 
 ## Citation
 
-If you use this software in your research, please cite as follows:
+If you use this software in your research, please cite it as follows:
 
 ```bibtex
 @misc{LabelPaw,
@@ -530,7 +520,7 @@ If you use this software in your research, please cite as follows:
 }
 ```
 
-**Acknowledgments and References**:
+**Acknowledgements and reference model citations**:
 
 ```bibtex
 @misc{carion2025sam3segmentconcepts,

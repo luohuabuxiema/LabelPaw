@@ -71,6 +71,7 @@ class InferenceWorkerThread(QThread):
     def run(self):
         try:
             from ultralytics import YOLO
+            from ultralytics.utils.plotting import colors as yolo_colors
             import cv2
 
             if not os.path.exists(self.weights_path):
@@ -99,6 +100,7 @@ class InferenceWorkerThread(QThread):
             # Parse detections
             detections = []
             names = res.names or {}
+            custom_colors = getattr(res, "colors", None)
             boxes = res.boxes
             if boxes is not None and len(boxes) > 0:
                 for b in boxes:
@@ -106,10 +108,12 @@ class InferenceWorkerThread(QThread):
                     cls_name = names.get(cls_id, str(cls_id))
                     conf_val = float(b.conf[0].item()) if hasattr(b, "conf") else 0.0
                     xyxy = [round(float(x), 1) for x in b.xyxy[0].tolist()]
+                    color_rgb = yolo_colors(cls_id, bgr=False, custom=custom_colors)
                     detections.append({
                         "class": cls_name,
                         "confidence": conf_val,
-                        "box": xyxy
+                        "box": xyxy,
+                        "color": "#{:02x}{:02x}{:02x}".format(*color_rgb),
                     })
 
             speed = getattr(res, "speed", {})
@@ -1576,24 +1580,18 @@ class ExperimentDetailView(MkPage):
                 w.setParent(None)
                 w.deleteLater()
 
-        # Dot colors palette
-        _dot_colors = [
-            "#7c3aed", "#1d4ed8", "#0891b2", "#059669",
-            "#d97706", "#dc2626", "#db2777", "#4f46e5",
-        ]
-
         if not dets:
             no_det = QLabel("暂无检测结果")
             _MkThemeEngine.apply_style_sheet(no_det, "color: #9ca3af; font-size: 11px; padding: 4px 0; background: transparent;")
             self._det_list_layout.addWidget(no_det)
         else:
-            for i, d in enumerate(dets):
+            for d in dets:
                 row = QHBoxLayout()
                 row.setContentsMargins(0, 3, 0, 3)
                 row.setSpacing(8)
 
                 # Colored dot
-                dot_color = _dot_colors[i % len(_dot_colors)]
+                dot_color = d.get("color", "#7c3aed")
                 dot = QLabel("●")
                 dot.setFont(QFont("Segoe UI", 9))
                 _MkThemeEngine.apply_style_sheet(dot, f"color: {dot_color}; background: transparent;")
@@ -2625,4 +2623,3 @@ class ExperimentDetailView(MkPage):
             for card in self._example_cards:
                 if hasattr(card, "set_theme"):
                     card.set_theme(is_dark)
-

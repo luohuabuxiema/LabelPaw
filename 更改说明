@@ -1,0 +1,249 @@
+# LabelPaw 本地环境与功能修改说明
+
+> 本文档记录当前本地 LabelPaw 项目相对于官方仓库版本的实际配置调整和功能改动。
+> 本文不替代官方 README，也不修改官方的标注流程和训练流程说明。
+>
+> 记录日期：2026-11-17
+
+## 1. 说明范围与依据
+
+- 官方项目：[`luohuabuxiema/LabelPaw`](https://github.com/luohuabuxiema/LabelPaw)
+- 官方中文说明：[`README_zh-CN.md`](https://github.com/luohuabuxiema/LabelPaw/blob/main/README_zh-CN.md)
+- 本文依据当前本地项目文件、实际执行过程和已经验证的运行结果整理。
+- 本次新增功能不改变 LabelPaw 原有的图片打开、标注保存、数据集转换和训练平台主流程。
+
+## 2. 本地环境配置调整
+
+### 2.1 已验证的运行环境
+
+当前实际验证成功的环境为：
+
+- 操作系统：Linux
+- Conda 环境：`yolo`
+- Python：`3.11`
+- PyTorch：`2.5.0`
+- TorchVision：`0.20.0`
+- TorchAudio：`2.5.0`
+- Conda CUDA 运行时：`pytorch-cuda 11.8`
+
+创建并进入环境：
+
+```bash
+conda create -n yolo python=3.11
+conda activate yolo
+```
+
+实际使用的 PyTorch 安装命令：
+
+```bash
+conda install pytorch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 pytorch-cuda=11.8 -c pytorch -c nvidia
+```
+
+安装项目依赖：
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2.2 `requirements.txt` 的实际调整
+
+当前 `requirements.txt` 中与官方 README 原依赖说明不同、并且已经根据实际依赖冲突调整的内容如下：
+
+| 依赖 | 原 README 中的写法 | 当前写法 | 调整原因 |
+|---|---|---|---|
+| `numpy` | `numpy~=1.24.4` | `numpy~=1.26.4` | `sam3` 要求 `numpy>=1.26,<2`，原版本与 `sam3` 冲突 |
+| `ftfy` | `ftfy~=6.3.1` | `ftfy==6.1.1` | `sam3 0.1.0` 固定要求 `ftfy==6.1.1`，原版本与 `sam3` 冲突 |
+
+当前文件还保留并统一声明了以下安装项：
+
+```text
+git+https://github.com/facebookresearch/sam3.git
+git+https://github.com/facebookresearch/sam2.git
+ultralytics==8.4.49
+```
+
+因此，正常情况下执行：
+
+```bash
+pip install -r requirements.txt
+```
+
+即可安装 SAM3、SAM2 和 Ultralytics；不需要再重复执行同一组安装命令。
+
+### 2.3 SAM2、SAM3 和 Ultralytics 的安装方式说明
+
+当前 `requirements.txt` 已包含 SAM2、SAM3 和 Ultralytics 的安装项。官方 README 中的源码下载、复制源码目录或 `pip install git+...` 方式属于备用方式，不应与 `requirements.txt` 中对应的安装方式重复叠加使用。
+
+如果选择本地源码方式，必须明确使用哪一套来源：
+
+- 通过 `requirements.txt` 安装；或
+- 使用本地源码目录；或
+- 使用 `pip install git+...` 从 Git 仓库安装。
+
+不要在没有确认导入来源的情况下同时保留多套不同版本，否则可能出现实际导入的版本与预期不一致。
+
+### 2.4 MonkeyQt 的兼容处理
+
+实际安装过程中，PyPI 中安装的 `monkeyqt` 可以完成依赖安装，但项目运行时缺少当前 TrainingPlatform 使用的部分组件/API，曾出现过以下类型的导入错误：
+
+- `MkMessageBox` 无法从 `monkeyqt` 导入；
+- `MkSkeleton` 无法从 `monkeyqt` 导入；
+- `monkeyqt.themes.engine` 无法导入；
+- `MkChartDashboard` 等训练平台组件无法导入。
+
+实际成功的处理方式不是修改 LabelPaw 的训练平台代码，而是使用 MonkeyQt 源码并解决旧安装目录的遮蔽问题：
+
+```bash
+conda activate yolo
+
+git clone https://github.com/luohuabuxiema/MonkeyQt.git /tmp/MonkeyQt-source
+pip install -e /tmp/MonkeyQt-source
+```
+
+然后，将当前 Conda 环境中原来遮蔽源码版本的目录改名。当前机器使用的路径是：
+
+```bash
+mv /home/cjr/miniconda3/envs/yolo/lib/python3.11/site-packages/monkeyqt \
+   /home/cjr/miniconda3/envs/yolo/lib/python3.11/site-packages/monkeyqt-old
+```
+
+> 上面的 `site-packages` 路径是当前机器的实际路径。其他机器必须先确认自己的 Conda Python 路径，不能直接照搬。
+>
+> 当前 editable 安装指向 `/tmp/MonkeyQt-source`。不要删除该目录，否则项目可能再次无法导入 MonkeyQt；如果要迁移源码目录，应在新目录重新执行 `pip install -e <新目录>` 并重新验证。
+
+验证 MonkeyQt 和训练平台：
+
+```bash
+python -c "import monkeyqt; print(monkeyqt.__file__); from monkeyqt.themes.engine import ThemeEngine; from monkeyqt import MkMessageBox, MkSkeleton, MkSkeletonBlock, MkChartDashboard; print('MonkeyQt API 正常')"
+
+cd ~/下载/LabelPaw
+python -c "from TrainingPlatform.ui.main_window import MainWindow; print('训练平台导入正常')"
+python main.py
+```
+
+验证成功时，项目可以正常启动可视化界面。
+
+## 3. 本地新增和修改的功能
+
+以下功能不是对训练模型结构的修改，而是对 LabelPaw 标注界面和 TrainingPlatform 推理结果显示的功能补充。
+
+### 3.1 使用数字键切换数字类别
+
+涉及文件：
+
+- `main.py`
+- `ui/annotation_tree_widget.py`
+
+当前实现使用窗口级 `QShortcut` 注册 `0` 到 `9` 的快捷键，并按照类别名称精确匹配：
+
+- 按 `0`：选择类别名称为 `"0"` 的标签；
+- 按 `1`：选择类别名称为 `"1"` 的标签；
+- ……
+- 按 `9`：选择类别名称为 `"9"` 的标签。
+
+这不是“按顺序选择第几个类别”，而是“按键值匹配同名标签”。例如：
+
+```text
+标签列表：0、1、2、3
+按 2：选中标签 2
+```
+
+当前已经实际实现并验证的是单个数字 `0`～`9`。如果标签名称不是对应数字，按键不会把它映射成其他类别。
+
+为避免影响文字输入，快捷键在文本编辑框获得焦点时不执行类别切换。
+
+### 3.2 右键删除类别
+
+涉及文件：
+
+- `ui/annotation_tree_widget.py`
+- `main.py`
+
+操作方式：
+
+1. 在右侧类别列表中右键点击目标类别；
+2. 选择“删除类别”；
+3. 在确认对话框中确认删除。
+
+删除类别后，当前实现会同步处理：
+
+- 删除当前画布中属于该类别的标注对象；
+- 从当前类别列表中移除该类别；
+- 删除当前数据集目录中 JSON 标注文件里的对应类别对象；
+- 删除 XML 标注文件中对应类别的对象；
+- 删除 YOLO `.txt` 标注文件中该类别的标注行；
+- 将 YOLO 文件中位于被删除类别之后的类别编号减一；
+- 更新类别文件、类别树和当前画布；
+- 执行自动保存并记录状态变化。
+
+删除提示中已明确说明：当前数据集中的该类别标注会被删除，YOLO 后续类别编号会同步调整。
+
+> 这是会修改当前数据集文件的操作。正式数据集执行前，建议先备份图片和标注文件。
+
+### 3.3 TrainingPlatform 推理页面统一颜色
+
+涉及文件：
+
+```text
+TrainingPlatform/ui/views/experiment_detail_view.py
+```
+
+原先的显示方式存在两套颜色规则：
+
+- 图片中的检测框由 Ultralytics `res.plot()` 按类别 ID 配色；
+- 右侧“识别目标”列表的圆点则按检测结果出现顺序配色。
+
+当检测结果顺序与类别 ID 不一致时，可能出现图片中的框颜色与右侧图例颜色不一致的问题。
+
+当前修改为：
+
+1. 读取每个检测框的类别 ID；
+2. 使用 Ultralytics 的类别颜色函数取得该类别颜色；
+3. 将同一个类别颜色传给右侧识别结果圆点；
+4. 图片检测框和右侧图例因此使用同一套类别颜色。
+
+该修改只影响界面显示，不改变：
+
+- 模型权重；
+- 检测框坐标；
+- 类别名称；
+- 置信度；
+- 训练流程；
+- 推理结果本身。
+
+修改代码后需要重启 LabelPaw，重新进入训练任务的“推理预测”页面并上传图片，界面修改才会生效。
+
+## 4. 当前启动方式
+
+```bash
+conda activate yolo
+cd ~/下载/LabelPaw
+python main.py
+```
+
+不要在未激活 `yolo` 环境的 `base` 环境中启动项目；当前已验证的 PySide6、PyTorch、MonkeyQt 和项目依赖都位于 `yolo` 环境中。
+
+## 5. 当前验证边界
+
+已经实际确认或完成的内容：
+
+- `requirements.txt` 在当前 `yolo` 环境中成功安装；
+- MonkeyQt 源码兼容处理后，LabelPaw 主界面可以启动；
+- TrainingPlatform 可以导入；
+- 数字标签快捷切换功能已成功使用；
+- 右键删除类别功能已成功使用；
+- 推理页面的检测框颜色与右侧图例已按类别统一；
+- 本文档记录的改动不要求修改官方项目的原始训练逻辑。
+
+本文没有把未在当前机器上验证过的其他操作系统、其他 Python 版本、其他 GPU、其他 MonkeyQt 安装路径或其他模型任务类型写成通用保证。
+
+## 6. 本次未修改的范围
+
+以下内容不属于本文档对应的本地功能改动：
+
+- LabelPaw 官方已有的基础标注模式；
+- SAM2、SAM3 和 Ultralytics 的模型算法；
+- YOLO 训练算法和训练超参数逻辑；
+- 数据集标注规则本身；
+- 机器人端部署和 TensorRT 部署流程；
+- 官方 README 中数据标注与模型训练章节的原有说明。
