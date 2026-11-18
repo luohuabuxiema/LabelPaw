@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QLabel,
-    QTreeWidget, QTreeWidgetItem, QColorDialog, QLineEdit, QHBoxLayout,
+    QTreeWidget, QTreeWidgetItem, QColorDialog, QLineEdit, QHBoxLayout, QMenu,
     QApplication, QStyle, QAbstractItemView
 )
 from PySide6.QtCore import Qt, Signal, QRect, QSize, QPoint
@@ -303,6 +303,7 @@ class AnnotationTreeWidget(QWidget):
 
     class_added = Signal(str)
     class_renamed = Signal(str, str)
+    class_removed = Signal(str)
     color_changed = Signal(str, object)
     item_changed = Signal(object)  # 兼容旧 item_changed 信号
     shape_class_reassigned = Signal(object, str)  # (shape, new_class_name) 当点击父类别修改选中图形的类别
@@ -366,6 +367,7 @@ class AnnotationTreeWidget(QWidget):
         self.treeWidget.setMouseTracking(True)
         self.treeWidget.setSelectionMode(QAbstractItemView.SingleSelection)
         self.treeWidget.setExpandsOnDoubleClick(False)  # 双击不展开/收缩，展开收缩由前面的 caret 图标控制
+        self.treeWidget.setContextMenuPolicy(Qt.CustomContextMenu)
         layout.addWidget(self.treeWidget, 1)
 
     def _connect_signals(self):
@@ -374,6 +376,7 @@ class AnnotationTreeWidget(QWidget):
         self.btnAdd.clicked.connect(self._on_add_class)
         self.treeWidget.itemSelectionChanged.connect(self._on_tree_selection_changed)
         self.treeWidget.itemDoubleClicked.connect(self._on_item_double_clicked)
+        self.treeWidget.customContextMenuRequested.connect(self._show_context_menu)
 
     def set_theme(self, is_dark):
         self.is_dark = is_dark
@@ -452,6 +455,23 @@ class AnnotationTreeWidget(QWidget):
             widget = self.treeWidget.itemWidget(item, 0)
             if isinstance(widget, ClassTreeItemWidget):
                 widget.start_edit()
+
+    def _show_context_menu(self, position):
+        item = self.treeWidget.itemAt(position)
+        if item is None:
+            return
+        if item.parent() is not None:
+            item = item.parent()
+
+        class_name = item.data(0, Qt.UserRole)
+        if not class_name:
+            return
+
+        menu = QMenu(self.treeWidget)
+        delete_action = menu.addAction("删除类别")
+        selected_action = menu.exec(self.treeWidget.viewport().mapToGlobal(position))
+        if selected_action == delete_action:
+            self.class_removed.emit(str(class_name))
 
     def rename_class_in_data(self, old_name, new_name):
         if old_name not in self._class_list:
@@ -685,6 +705,14 @@ class AnnotationTreeWidget(QWidget):
 
     def get_class_list(self):
         return list(self._class_list)
+
+    def select_class_by_label(self, label):
+        """按类别名称精确选中指定类别。"""
+        item = self._class_items.get(str(label))
+        if item is not None:
+            self.treeWidget.clearSelection()
+            item.setSelected(True)
+            self.treeWidget.setCurrentItem(item)
 
     def get_class_color(self, cls_name):
         return self._class_colors.get(cls_name, QColor("#3B82F6"))
