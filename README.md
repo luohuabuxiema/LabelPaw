@@ -147,36 +147,7 @@ The paths above correspond to the local Conda installation. On another machine, 
 
 > Note: If you need intelligent assistance, make sure that the `sam3`, `sam2`, and `ultralytics` libraries and their dependencies are correctly configured. If installation of the SAM3, SAM2, or Ultralytics libraries above fails, the source-installation tutorial below is also available.
 
-#### Errors Encountered During Installation
 
-(1) The virtual environment could not be created:
-![Conda virtual-environment creation error](assets/err_conda_create.png)
-
-Solution: Go to `C:\Users\你的用户` and delete the `.condarc` file.
-
-(2) Error: `ModuleNotFoundError: No module named ‘pkg_resources‘`
-
-![Missing pkg_resources error](assets/err_pkg_resources.png)
-
-Solution: Downgrade the `setuptools` package. The version installed in this setup was 79.0.1.
-
-```python
-pip install setuptools==79.0.1
-```
-![Successful installation of the older setuptools version](assets/fix_setuptools.png)
-
-Reference: [https://blog.csdn.net/u014451778/article/details/158469881](https://blog.csdn.net/u014451778/article/details/158469881/)
-
-(3) Error: `ModuleNotFoundError: No module named ‘triton‘`
-![Missing triton package error](assets/err_triton_missing.png)
-
-Solution: Download an offline installation package and install it separately.
-
-Triton offline package download: [https://hf-mirror.com/madbuda/triton-windows-builds](https://hf-mirror.com/madbuda/triton-windows-builds/)
-
-![Triton offline wheel download page](assets/triton_wheel_download.png)
-
-Reference: [https://blog.csdn.net/qq_42910179/article/details/155606159](https://blog.csdn.net/qq_42910179/article/details/155606159/)
 
 ### 2. Optional Fallback Source Installation for SAM2, SAM3, and Ultralytics
 
