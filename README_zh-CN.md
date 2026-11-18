@@ -147,37 +147,6 @@ python main.py
 
 > 注：如果需要使用智能辅助功能，请确保你的环境中已经正确配置了 `sam3`、 `sam2`、`ultralytics`相关的库及其依赖，如果上面的sam3、sam2、ultralytics 库安装失败，下文也有源码方式安装教程。
 
-#### 安装过程我遇到的错误
-
-（1）创建虚拟环境时候创建不了，报错如下：
-![Conda创建虚拟环境报错](assets/err_conda_create.png)
-
-解决方法：去 C:\Users\你的用户下，删除 .condarc 文件 
-
-（2）报错 ModuleNotFoundError: No module named ‘pkg_resources‘ 
-
-![缺少pkg_resources报错](assets/err_pkg_resources.png)
-
-解决方法：降低 setuptools 库版本，我安装的版本是 79.0.1
-
-```python
-pip install setuptools==79.0.1
-```
-![安装低版本setuptools成功](assets/fix_setuptools.png)
-
-参考链接： [https://blog.csdn.net/u014451778/article/details/158469881](https://blog.csdn.net/u014451778/article/details/158469881/)
-
-（3）报错 ModuleNotFoundError: No module named ‘triton‘ 
-![缺少triton库报错](assets/err_triton_missing.png)
-
-解决方法：下载离线安装包，单独安装
-
-triton离线安装包下载地址：[https://hf-mirror.com/madbuda/triton-windows-builds](https://hf-mirror.com/madbuda/triton-windows-builds/)
-
-![Triton离线whl下载页面](assets/triton_wheel_download.png)
-
-参考链接：[https://blog.csdn.net/qq_42910179/article/details/155606159](https://blog.csdn.net/qq_42910179/article/details/155606159/)
-
 ### 2. SAM2、SAM3、Ultralytics 的备用源码方式（可选）
 
 `requirements.txt` 已经包含 SAM2、SAM3 和 Ultralytics 的安装项，正常情况下不需要重复执行本节。只有在依赖安装失败，或你明确要使用本地源码时，才选择下面的源码方式；不要同时重复安装两套版本。
